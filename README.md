@@ -27,38 +27,7 @@ few-shot learning. [Click here for website and paper.](https://sites.google.com/
 - [Acknowledgements](#acknowledgements)
 - [Citation](#citation)
 
-## Announcements
-
-### 11 May 2022
-
-- Shaped rewards added for: **reach_target** and **take_lid_off_saucepan**. Pass `shaped_rewards=True` to `Environement` class
-
-### 18 February 2022
-
-- **Version 1.2.0 is live!** Note: This release will cause code-breaking API changes for action modes.
-
-### 1 July 2021
-
-- New instructions on headless GPU rendering [here](#running-headless)!
-
-### 8 September 2020
-
-- New tutorial series on task creation [here](https://www.youtube.com/watch?v=bKaK_9O3v7Y&list=PLsffAlO5lBTRiBwnkw2-x0U7t6TrNCkfc)!
-
-### 1 April 2020
-
-- We added a Discord channel to allow the RLBench community to help one another. Click the Discord badge above.
-
-### 28 January 2020
-
-- RLBench has been accepted to RA-L with presentation at ICRA!
-- Ability to easily swap out arms added. [See here](#swapping-arms).
-
-### 17 December 2019
-
-- Gym is now supported!
-
-
+# Original RlBench Content
 ## Install
 
 RLBench is built around CoppeliaSim v4.1.0 and [PyRep](https://github.com/stepjam/PyRep).
@@ -142,7 +111,6 @@ The benchmark places particular emphasis on few-shot learning and meta learning
 due to breadth of tasks available, though it can be used in numerous ways. Before using RLBench, 
 checkout the [Gotchas](#gotchas) section.
 
-
 ### Imitation Learning
 
 ```python
@@ -178,67 +146,6 @@ loss = behaviour_cloning_loss(ground_truth_actions, predicted_actions)
 
 A full example can be seen in [examples/imitation_learning.py](examples/imitation_learning.py).
 
-### Multi-Task Learning
-
-We have created splits of tasks called 'Task Sets', which consist of a 
-collection of X training tasks. Here X can be 15, 30, 55, or 100.
-For example, to work on the task set with 15 training tasks, we import `MT15_V1`:
-
-```python
-import numpy as np
-from rlbench.action_modes.action_mode import MoveArmThenGripper
-from rlbench.action_modes.arm_action_modes import JointVelocity
-from rlbench.action_modes.gripper_action_modes import Discrete
-from rlbench.environment import Environment
-from rlbench.tasks import MT15_V1
-
-action_mode = MoveArmThenGripper(
-  arm_action_mode=JointVelocity(),
-  gripper_action_mode=Discrete()
-)
-env = Environment(action_mode)
-env.launch()
-
-train_tasks = MT15_V1['train']
-task_to_train = np.random.choice(train_tasks, 1)[0]
-task = env.get_task(task_to_train)
-task.sample_variation()  # random variation
-descriptions, obs = task.reset()
-obs, reward, terminate = task.step(np.random.normal(size=env.action_shape))
-```
-
-A full example can be seen in [examples/multi_task_learning.py](examples/multi_task_learning.py).
-
-### RLBench Gym
-
-RLBench is __Gym__ compatible! Ensure you have gym installed (`pip3 install gym`).
-
-Simply select your task of interest from [rlbench/tasks/](rlbench/tasks/), and
-then load the task by using the task name (e.g. 'reach_target') followed by
-the observation mode: 'state' or 'vision'.
-
-```python
-import gym
-import rlbench
-
-env = gym.make('reach_target-state-v0')
-# Alternatively, for vision:
-# env = gym.make('reach_target-vision-v0')
-
-training_steps = 120
-episode_length = 40
-for i in range(training_steps):
-    if i % episode_length == 0:
-        print('Reset Episode')
-        obs = env.reset()
-    obs, reward, terminate, _ = env.step(env.action_space.sample())
-    env.render()  # Note: rendering increases step time.
-
-print('Done')
-env.close()
-```
-
-A full example can be seen in [examples/rlbench_gym.py](examples/rlbench_gym.py).
 
 ### Swapping Arms
 
@@ -276,55 +183,6 @@ we can being it in to RLBench for you.
 
 To see a full list of all tasks, [see here](rlbench/tasks).
 
-To see gifs of each of the tasks, [see here](https://drive.google.com/drive/folders/1TqbulbbCEqVBd6SBHatphFlUK2JQLkYu?usp=sharing).
-
-## Task Building
-
-The task building tool is the interface for users who wish to create new tasks 
-to be added to the RLBench task repository. Each task has 2 associated files: 
-a V-REP model file (_.ttm_), which holds all of the scene information and demo 
-waypoints, and a python (_.py_) file, which is responsible for wiring the 
-scene objects to the RLBench backend, applying variations, defining success
-criteria, and adding other more complex task behaviours.
-
-Video tutorial series [here](https://www.youtube.com/watch?v=bKaK_9O3v7Y&list=PLsffAlO5lBTRiBwnkw2-x0U7t6TrNCkfc)!
-
-In-depth text tutorials:
-- [Simple Task](tutorials/simple_task.md)
-- [Complex Task](tutorials/complex_task.md)
-
-## Gotchas!
-
-- **Using low-dimensional task observations (rather than images):** RLBench was designed to be challenging, putting emphasis on vision rather than 
-toy-based low dimensional inputs. Although each task does supply a low-dimensional
-output this should be used with extreme caution!
-    - Why? Imagine you are training a reinforcement learning agent to pick up a block; halfway through
-    training, the block slips from the gripper and falls of the table. These low-dimensional values
-    will now be out of distribution. I.e. RLBench does not safeguard against objects going out of the 
-    workspace. This issue does not arise when using image-based observations. 
-    
-- **Using non-standard image size:** RLBench by default uses image observation sizes of 128x128.
-When using an alternative size, be aware that you may need to collect your saved demonstrations again.
-    - Why? If we instead specify a 64x64 image observation size to the `ObservationConfig` then the
-    scene cameras will now render to that size. However, the saved demos on disk will now be **resized**
-    to be 64x64.
-    This resizing will of course mean that small artifacts may be present in stored demos
-    that may not be present in the 'live' observations from the scene. Instead, prefer to re-collect demos
-    using the image observation sized you plan to use in the 'live' environment.
-    
-
-## Contributing
-
-New tasks using our task building tool, in addition to bug fixes, are very 
-welcome! When building your task, please ensure that you run the task validator
-in the task building tool.
-
-A full contribution guide is coming soon!
-
-## Acknowledgements
-
-Models were supplied from turbosquid.com, cgtrader.com, free3d.com, 
-thingiverse.com, and cadnav.com.
 
 ## Citation
 
@@ -335,4 +193,19 @@ thingiverse.com, and cadnav.com.
   journal={IEEE Robotics and Automation Letters},
   year={2020}
 }
+```
+# SELF Content
+## Record demos
+This is how to record IL demos:
+You can configure the saved_path and task in the scripts
+```bash
+# In terminal 1
+export COPPELIASIM_ROOT=${HOME}/CoppeliaSim
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$COPPELIASIM_ROOT
+export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT
+
+cd SEIL/SEIL
+bash scripts/generate_dataset_IL.sh
+eog /tmp/rlbench_data/open_box/variation0/episodes/episode0/right_shoulder_depth/0.png
+
 ```

@@ -155,11 +155,10 @@ def save_demo_IL(demo, example_path):
         example_path, JOINT_VELOCITIES)
     joint_positions_path = os.path.join(
         example_path, JOINT_POSITIONS)
-  
+    
     check_and_make(right_shoulder_rgb_path)
     check_and_make(right_shoulder_depth_path)
-    check_and_make(joint_velocities_path)
-    check_and_make(joint_positions_path)
+    
 
     joint_velocities_list = []
     joint_positions_list = []
@@ -182,8 +181,10 @@ def save_demo_IL(demo, example_path):
 
     if joint_velocities_list:
         np.save(joint_velocities_path, np.array(joint_velocities_list))
+        print(np.array(joint_velocities_list).shape)
     if joint_positions_list:
         np.save(joint_positions_path, np.array(joint_positions_list))
+        print(np.array(joint_positions_list).shape)
        
         # We save the images separately, so set these to None for pickling.
         obs.left_shoulder_rgb = None
