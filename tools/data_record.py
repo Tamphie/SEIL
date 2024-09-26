@@ -91,7 +91,20 @@ class LoadedTask(object):
                 print('Please pick a defined task in that case.')
                 task_class, task_file = self._edit_new_task()
         return task_class, task_file
-
+    
+    def _task_to_record(self):
+        while True:
+            task_file = input('What task would you like to edit?\n')
+            task_file = task_file.strip(' ')
+            if len(task_file) > 3 and task_file[-3:] != '.py':
+                task_file += '.py'
+            try:
+                task_class = name_to_task_class(task_file)
+                return task_class, task_file
+            except:
+                print('There was no task named: %s. Please try again.' % task_file)
+                
+    
     def _create_python_file(self, task_file: str):
         with open(join(CURRENT_DIR, 'assets', 'task_template.txt'), 'r') as f:
             file_content = f.read()
@@ -124,6 +137,13 @@ class LoadedTask(object):
         self._load_task_to_scene()
         self.pr.step_ui()
         print('You are now editing: %s' % str(self.task_class))
+    
+    def get_task(self):
+        self._variation_index = 0
+        self.task_class, self.task_file = self._task_to_record()
+        self._load_task_to_scene()
+        self.pr.step_ui()
+        print('You are now playing: %s' % str(self.task_class))
 
     def reset_variation(self):
         self._variation_index = 0
@@ -150,9 +170,11 @@ class LoadedTask(object):
             self.scene.reset()
         self.pr.step_ui()
 
-    def new_demo(self):
+    def new_demo(self,saved_data:bool = False):
         try:
-            self.scene.get_demo(True, randomly_place=False)
+            obs = self.scene.get_demo(True, randomly_place=False)
+            if saved_data:
+                pass
         except (WaypointError, NoWaypointsError, DemoError, Exception) as e:
             traceback.print_exc()
         success, terminate = self.task.success()
@@ -295,7 +317,7 @@ if __name__ == '__main__':
     print(' )(')
     print(' ""')
 
-    loaded_task.new_task()
+    loaded_task.get_task()
 
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -304,17 +326,13 @@ if __name__ == '__main__':
         print('(q) to quit.')
         if pr.running:
             print('(+) stop the simulator')
-            print('(v) for task variation.')
-            print('(e) for episode of same variation.')
-            print('(d) for demo.')
-            print('(p) for running the sim for 100 steps (with rendering).')
+            print('How many episodes are you trying to record?')
+            
         else:
             print('(!) to run task validator.')
             print('(+) run the simulator')
             print('(n) for new task.')
-            print('(s) to save the .ttm')
-            print('(r) to rename the task')
-            print('(u) to duplicate/copy the task')
+            
 
         inp = input()
 
@@ -325,14 +343,16 @@ if __name__ == '__main__':
             if inp == '+':
                 pr.stop()
                 pr.step_ui()
-            elif inp == 'p':
-                [(pr.step(), scene.get_observation()) for _ in range(100)]
-            elif inp == 'd':
-                loaded_task.new_demo()
-            elif inp == 'v':
-                loaded_task.new_variation()
-            elif inp == 'e':
-                loaded_task.new_episode()
+            elif inp.isdigit():  
+                epi_num = int(inp)  
+                if epi_num < 3:
+                    for _ in range(epi_num):
+                        
+                        loaded_task.new_episode()
+                        loaded_task.new_demo(saved_data=True)
+                        # to be add save data
+                else:
+                    inp = input("Please enter a number again: ")
         else:
             if inp == '+':
                 loaded_task.reload_python()
@@ -340,18 +360,10 @@ if __name__ == '__main__':
                 pr.start()
                 pr.step_ui()
             elif inp == 'n':
-                inp = input('Do you want to save the current task first?\n')
-                if inp == 'y':
-                    loaded_task.save_task()
-                loaded_task.new_task()
-            elif inp == 's':
-                loaded_task.save_task()
+                loaded_task.get_task()
             elif inp == '!':
                 loaded_task.run_task_validator()
-            elif inp == 'r':
-                loaded_task.rename()
-            elif inp == 'u':
-                loaded_task.duplicate_task()
+            
 
     pr.stop()
     pr.shutdown()
