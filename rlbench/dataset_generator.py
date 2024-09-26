@@ -143,6 +143,75 @@ def save_demo(demo, example_path):
     with open(os.path.join(example_path, LOW_DIM_PICKLE), 'wb') as f:
         pickle.dump(demo, f)
 
+def save_demo_IL(demo, example_path):
+
+    # Save image data first, and then None the image data, and pickle
+  
+    right_shoulder_rgb_path = os.path.join(
+        example_path, RIGHT_SHOULDER_RGB_FOLDER)
+    right_shoulder_depth_path = os.path.join(
+        example_path, RIGHT_SHOULDER_DEPTH_FOLDER)
+    joint_velocities_path = os.path.join(
+        example_path, JOINT_VELOCITIES)
+    joint_positions_path = os.path.join(
+        example_path, JOINT_POSITIONS)
+    
+    check_and_make(right_shoulder_rgb_path)
+    check_and_make(right_shoulder_depth_path)
+    
+
+    joint_velocities_list = []
+    joint_positions_list = []
+
+    for i, obs in enumerate(demo):
+      
+        right_shoulder_rgb = Image.fromarray(obs.right_shoulder_rgb)
+        right_shoulder_depth = utils.float_array_to_rgb_image(
+            obs.right_shoulder_depth, scale_factor=DEPTH_SCALE)
+    
+        right_shoulder_rgb.save(
+            os.path.join(right_shoulder_rgb_path, IMAGE_FORMAT % i))
+        right_shoulder_depth.save(
+            os.path.join(right_shoulder_depth_path, IMAGE_FORMAT % i))
+        
+        if obs.joint_velocities is not None:
+            joint_velocities_list.append(obs.joint_velocities)   
+        if obs.joint_positions is not None:
+            joint_positions_list.append(obs.joint_positions)
+
+    if joint_velocities_list:
+        np.save(joint_velocities_path, np.array(joint_velocities_list))
+        print(np.array(joint_velocities_list).shape)
+    if joint_positions_list:
+        np.save(joint_positions_path, np.array(joint_positions_list))
+        print(np.array(joint_positions_list).shape)
+       
+        # We save the images separately, so set these to None for pickling.
+        obs.left_shoulder_rgb = None
+        obs.left_shoulder_depth = None
+        obs.left_shoulder_point_cloud = None
+        obs.left_shoulder_mask = None
+        obs.right_shoulder_rgb = None
+        obs.right_shoulder_depth = None
+        obs.right_shoulder_point_cloud = None
+        obs.right_shoulder_mask = None
+        obs.overhead_rgb = None
+        obs.overhead_depth = None
+        obs.overhead_point_cloud = None
+        obs.overhead_mask = None
+        obs.wrist_rgb = None
+        obs.wrist_depth = None
+        obs.wrist_point_cloud = None
+        obs.wrist_mask = None
+        obs.front_rgb = None
+        obs.front_depth = None
+        obs.front_point_cloud = None
+        obs.front_mask = None
+
+    # Save the low-dimension data
+    with open(os.path.join(example_path, LOW_DIM_PICKLE), 'wb') as f:
+        pickle.dump(demo, f)
+
 
 def run(i, lock, task_index, variation_count, results, file_lock, tasks, args):
     """Each thread will choose one task and variation, and then gather
@@ -271,7 +340,10 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks, args):
                     break
                 episode_path = os.path.join(episodes_path, EPISODE_FOLDER % ex_idx)
                 with file_lock:
-                    save_demo(demo, episode_path)
+                    if args.IL_data:
+                        save_demo_IL(demo, episode_path)
+                    else:
+                        save_demo(demo, episode_path)
                 break
             if abort_variation:
                 break
@@ -291,6 +363,7 @@ def parse_args():
     parser.add_argument('--variations', type=int, default=-1, help='Number of variations to collect per task. -1 for all.')
     parser.add_argument('--arm_max_velocity', type=float, default=1.0, help='Max arm velocity used for motion planning.')
     parser.add_argument('--arm_max_acceleration', type=float, default=4.0, help='Max arm acceleration used for motion planning.')
+    parser.add_argument('--IL_data', action='store_true',default=True, help='To save IL data including joint info.')
     return parser.parse_args()
 
 
