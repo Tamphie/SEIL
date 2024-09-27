@@ -196,15 +196,40 @@ To see a full list of all tasks, [see here](rlbench/tasks).
 ```
 # SELF Content
 ## Record demos
-This is how to record IL demos:
-You can configure the saved_path and task in the scripts
+Set up
 ```bash
 # In terminal 1
+pip install --user virtualenv
+virtualenv SEIL
+source SEIL/bin/activate
+pip install --upgrade pip setuptools
+
+pip install -e ./RobotIL/
+
 export COPPELIASIM_ROOT=${HOME}/CoppeliaSim
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$COPPELIASIM_ROOT
 export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT
 
+wget --no-check-certificate https://downloads.coppeliaroboticsUbuntu20_04.tar.xz
+mkdir -p $COPPELIASIM_ROOT && tar -xf CoppeliaSim_Edu_V4_1_0_UOOT --strip-components 1
+rm -rf CoppeliaSim_Edu_V4_1_0_Ubuntu20_04.tar.xz
+
+pip install git+https://github.com/stepjam/RLBench.git
+
+pip install gymnasium 
+pip install testresources
+
+pip uninstall opencv-python opencv-python-headless opencv-contrib-python -y
+# Install the headless version of OpenCV
+pip install opencv-python-headless
+pip install PyQt5
+```
+This is how to build task/ record IL demos:
+You can configure the saved_path and task in the scripts
+```bash
 cd SEIL/SEIL
+python3 tools/task_builder.py
+
 bash scripts/generate_dataset_IL.sh
 eog /tmp/rlbench_data/open_box/variation0/episodes/episode0/right_shoulder_depth/0.png
 
