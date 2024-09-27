@@ -1,7 +1,6 @@
 import os
 import sys
 from os.path import join, dirname, abspath, isfile
-
 CURRENT_DIR = dirname(abspath(__file__))
 sys.path.insert(0, join(CURRENT_DIR, '..'))  # Use local RLBench rather than installed
 
