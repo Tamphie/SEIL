@@ -1,8 +1,17 @@
+# Ignore everything in the root directory
+
+# Except SEIL/SEIL and its contents
+
+logs/
+urdfs/
+tutorials/
+tests/
+data/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
+SEIL/data/
 .idea/
 
 # C extensions
@@ -28,6 +37,20 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Ignore environment files
+.vscode/
+bin/
+etc/
+lib/
+lib64/
+pyvenv.cfg
+share/
+
+# Ignore any system or build artifacts
+build/
+dist/
+*.egg-info
+*.egg
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.

@@ -204,7 +204,6 @@ virtualenv SEIL
 source SEIL/bin/activate
 pip install --upgrade pip setuptools
 
-pip install -e ./RobotIL/
 
 export COPPELIASIM_ROOT=${HOME}/CoppeliaSim
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$COPPELIASIM_ROOT
@@ -224,13 +223,35 @@ pip uninstall opencv-python opencv-python-headless opencv-contrib-python -y
 pip install opencv-python-headless
 pip install PyQt5
 ```
-This is how to build task/ record IL demos:
+This is how to build task:
 You can configure the saved_path and task in the scripts
 ```bash
 cd SEIL/SEIL
 python3 tools/task_builder.py
 
+```
+This is how to collect data
+```bash
+#Open MobaXterm
+cd SEIL/SEIL 
+source SEIL/bin/activate
+export ..
+pip install opencv-python-headless
 bash scripts/generate_dataset_IL.sh
-eog /tmp/rlbench_data/open_box/variation0/episodes/episode0/right_shoulder_depth/0.png
+#variations have to be larger than 0
+```
+To see the collected image in MobaXterm
+``` bash
+eog /home/tongmiao/SEIL/SEIL/data/open_door/episode_0/right_shoulder_rgb/0.png 
+
 
 ```
+To train the data:
+```bash
+git clone https://github.com/RobotIL-rls/RobotIL.git --recursive
+git clone https://github.com/RobotIL-rls/robomimic.git
+cd RobotIL/
+pip install -e .
+pip install -e robomimic
+pip install opencv-python
+bash scripts/train_policy.sh

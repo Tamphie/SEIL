@@ -152,40 +152,49 @@ def save_demo_IL(demo, example_path):
     right_shoulder_depth_path = os.path.join(
         example_path, RIGHT_SHOULDER_DEPTH_FOLDER)
     joint_velocities_path = os.path.join(
-        example_path, JOINT_VELOCITIES)
+        example_path, JOINT_VELOCITIES_FOLDER)
     joint_positions_path = os.path.join(
-        example_path, JOINT_POSITIONS)
+        example_path, JOINT_POSITIONS_FOLDER)
+    front_point_cloud_path = os.path.join(
+        example_path,FRONT_PCD_FOLDER)
+    gripper_states_path = os.path.join(
+        example_path,GRIPPER_STATES_FOLDER)
     
+
     check_and_make(right_shoulder_rgb_path)
     check_and_make(right_shoulder_depth_path)
+    check_and_make(front_point_cloud_path)
     
 
     joint_velocities_list = []
     joint_positions_list = []
+    gripper_states_list = []
+    # front_point_cloud_list =[]
 
     for i, obs in enumerate(demo):
-      
+
+        gripper_open = np.array(obs.gripper_open).reshape(1)
+        gripper_pose = np.array(obs.gripper_pose)
+        gripper_states = np.concatenate([gripper_pose, gripper_open])
+
         right_shoulder_rgb = Image.fromarray(obs.right_shoulder_rgb)
         right_shoulder_depth = utils.float_array_to_rgb_image(
             obs.right_shoulder_depth, scale_factor=DEPTH_SCALE)
-    
+        front_point_cloud = np.array(obs.front_point_cloud)
+
         right_shoulder_rgb.save(
             os.path.join(right_shoulder_rgb_path, IMAGE_FORMAT % i))
         right_shoulder_depth.save(
             os.path.join(right_shoulder_depth_path, IMAGE_FORMAT % i))
+        np.save(
+            os.path.join(front_point_cloud_path, PCD_FORMAT % i), front_point_cloud)
+        print(front_point_cloud.shape)
         
-        if obs.joint_velocities is not None:
-            joint_velocities_list.append(obs.joint_velocities)   
-        if obs.joint_positions is not None:
-            joint_positions_list.append(obs.joint_positions)
-
-    if joint_velocities_list:
-        np.save(joint_velocities_path, np.array(joint_velocities_list))
-        print(np.array(joint_velocities_list).shape)
-    if joint_positions_list:
-        np.save(joint_positions_path, np.array(joint_positions_list))
-        print(np.array(joint_positions_list).shape)
-       
+        joint_velocities_list.append(obs.joint_velocities)   
+        joint_positions_list.append(obs.joint_positions)
+        gripper_states_list.append(gripper_states)
+        # front_point_cloud_list.append(obs.front_point_cloud)
+        
         # We save the images separately, so set these to None for pickling.
         obs.left_shoulder_rgb = None
         obs.left_shoulder_depth = None
@@ -207,6 +216,20 @@ def save_demo_IL(demo, example_path):
         obs.front_depth = None
         obs.front_point_cloud = None
         obs.front_mask = None
+
+    np.save(joint_velocities_path, np.array(joint_velocities_list))
+    print(np.array(joint_velocities_list).shape)
+
+    np.save(joint_positions_path, np.array(joint_positions_list))
+    print(np.array(joint_positions_list).shape)
+
+    np.save(gripper_states_path, np.array(gripper_states_list))
+    print(np.array(gripper_states_list).shape)
+
+    # np.save(front_point_cloud_path, np.array(front_point_cloud_list))
+    # print(np.array(front_point_cloud_list).shape)
+       
+       
 
     # Save the low-dimension data
     with open(os.path.join(example_path, LOW_DIM_PICKLE), 'wb') as f:
@@ -299,7 +322,8 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks, args):
         task_env = rlbench_env.get_task(t)
         task_env.set_variation(my_variation_count)
         descriptions, _ = task_env.reset()
-
+        task_path =  os.path.join(
+            args.save_path, task_env.get_name())
         variation_path = os.path.join(
             args.save_path, task_env.get_name(),
             VARIATIONS_FOLDER % my_variation_count)
@@ -310,8 +334,8 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks, args):
                 variation_path, VARIATION_DESCRIPTIONS), 'wb') as f:
             pickle.dump(descriptions, f)
 
-        episodes_path = os.path.join(variation_path, EPISODES_FOLDER)
-        check_and_make(episodes_path)
+        # episodes_path = os.path.join(variation_path, EPISODES_FOLDER)
+        # check_and_make(episodes_path)
 
         abort_variation = False
         for ex_idx in range(args.episodes_per_task):
@@ -338,7 +362,7 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks, args):
                     tasks_with_problems += problem
                     abort_variation = True
                     break
-                episode_path = os.path.join(episodes_path, EPISODE_FOLDER % ex_idx)
+                episode_path = os.path.join(task_path, EPISODE_FOLDER % ex_idx)
                 with file_lock:
                     if args.IL_data:
                         save_demo_IL(demo, episode_path)
@@ -364,12 +388,13 @@ def parse_args():
     parser.add_argument('--arm_max_velocity', type=float, default=1.0, help='Max arm velocity used for motion planning.')
     parser.add_argument('--arm_max_acceleration', type=float, default=4.0, help='Max arm acceleration used for motion planning.')
     parser.add_argument('--IL_data', action='store_true',default=True, help='To save IL data including joint info.')
+    if parser.parse_args().variations == 0:
+        parser.error("The value for '--variations' must be greater than 0.")
     return parser.parse_args()
 
 
 def main():
     args = parse_args()
-
     task_files = [t.replace('.py', '') for t in os.listdir(task.TASKS_PATH)
                   if t != '__init__.py' and t.endswith('.py')]
 
