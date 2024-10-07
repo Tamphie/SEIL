@@ -2,7 +2,7 @@
 
 # Set variables
 task_name="open_box"
-policy_class="Diffusion"  # ["ACT", "Diffusion"]
+policy_class="ACT"  # ["ACT", "Diffusion"]
 visual_encoder="resnet18"  # ["dinov2", "resnet18"]
 variant="vits14"  # ["vits14", "vitb14", "vitl14", "vitg14"]
 predict_value="ee_pos_ori" # ["joint_states", "ee_pos_ori"]

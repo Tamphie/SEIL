@@ -13,7 +13,7 @@ __pycache__/
 *$py.class
 SEIL/data/
 .idea/
-
+check_point/
 # C extensions
 *.so
 
