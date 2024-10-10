@@ -251,6 +251,7 @@ class PolicyInferenceAPI:
         # Return quaternion in [w, x, y, z] format for consistency
         return np.array([quat[3], quat[0], quat[1], quat[2]])  
         # TODO verify the quaternion is [w, x, y, z]
+        # TODO verify the function why this is different from torch_server
 
     def action_process(self, action):
         predicted_pos = action[:3]
