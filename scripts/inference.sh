@@ -7,7 +7,7 @@ policy_class="ACT"  # ["ACT", "Diffusion"]
 visual_encoder="resnet18"  # ["dinov2", "resnet18"]
 variant="vits14"  # ["vits14", "vitb14", "vitl14", "vitg14"]
 predict_value="ee_pos_ori" # ["joint_states", "ee_pos_ori", "ee_delta_pos_ori", "ee_relative_pos_ori"]
-
+obs_type="rgbd"
 # Export environment variables
 export MASTER_ADDR='localhost'  # Use the appropriate master node address
 export MASTER_PORT=12345        # Use any free port
@@ -23,4 +23,5 @@ python SEIL_infer.py \
     --seed 0 \
     --temporal_agg \
     --predict_value ${predict_value} \
+    --obs_type ${obs_type} \
     --episode_len ${episode_length}  \

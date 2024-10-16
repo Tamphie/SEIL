@@ -2,7 +2,7 @@ import importlib
 from functools import partial
 from os.path import exists, dirname, abspath, join
 from typing import Type, List
-
+import numpy as np
 from pyrep import PyRep
 from pyrep.objects import VisionSensor
 from pyrep.robots.arms.panda import Panda
@@ -93,6 +93,9 @@ class Environment(object):
                 'Tried to interpret %s as a task, but failed. Only valid tasks '
                 'should belong in the tasks/ folder' % task_name) from e
         return getattr(mod, class_name)
+    
+    def seed(self, seed):
+        np.random.seed(seed)
 
     def launch(self):
         if self._pyrep is not None:

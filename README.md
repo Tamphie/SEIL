@@ -233,12 +233,13 @@ python3 tools/task_builder.py
 This is how to collect data
 ```bash
 #Open MobaXterm
-cd SEIL/SEIL 
-source SEIL/bin/activate
+source ENV/bin/activate
 export ..
 pip install opencv-python-headless
+cd SEIL/
 bash scripts/generate_dataset_IL.sh
 #variations have to be larger than 0
+
 ```
 To see the collected image in MobaXterm
 ``` bash
@@ -255,3 +256,12 @@ pip install -e .
 pip install -e robomimic
 pip install opencv-python
 bash scripts/train_policy.sh
+
+```
+To infer:
+```bash
+source ENV/bin/activate
+export ..
+pip install opencv-python-headless
+cd SEIL/
+bash scripts/inference.sh
