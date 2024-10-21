@@ -102,7 +102,7 @@ class Environment(object):
             raise RuntimeError('Already called launch!')
         self._pyrep = PyRep()
         self._pyrep.launch(join(DIR_PATH, TTT_FILE), headless=self._headless)
-
+        self._pyrep.set_simulation_timestep(0.001)
         arm_class, gripper_class, _ = SUPPORTED_ROBOTS[
             self._robot_setup]
         arm_class = partial(

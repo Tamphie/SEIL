@@ -227,9 +227,11 @@ class PolicyInferenceAPI:
             ).cuda()
         # qpos_history = torch.zeros((1, max_timesteps, self.config["policy_config"]["state_dim"])).cuda()
         with torch.no_grad():
+            print(f"temporal_agg is {self.temporal_agg}")
             for t in range(max_timesteps):
-                
+                time.sleep(0.01)
                 qpos, rgb_images = self._get_data(t)
+                # self.test_by_collect(t)
                 # Run the collected data through the policy
                 self._run(
                     qpos,

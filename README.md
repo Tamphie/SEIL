@@ -201,7 +201,7 @@ Set up
 # In terminal 1
 pip install --user virtualenv
 virtualenv SEIL
-source SEIL/bin/activate
+source ENV/bin/activate
 pip install --upgrade pip setuptools
 
 
@@ -243,11 +243,11 @@ bash scripts/generate_dataset_IL.sh
 ```
 To see the collected image in MobaXterm
 ``` bash
-eog /home/tongmiao/SEIL/SEIL/data/open_door/episode_0/right_shoulder_rgb/0.png 
+eog /home/tongmiao/SEIL/data/open_box/episode_0/right_shoulder_rgb/0.png 
 
 
 ```
-To train the data:
+To train:
 ```bash
 git clone https://github.com/RobotIL-rls/RobotIL.git --recursive
 git clone https://github.com/RobotIL-rls/robomimic.git

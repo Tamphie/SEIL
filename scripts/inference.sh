@@ -20,8 +20,8 @@ python SEIL_infer.py \
     --policy_class ${policy_class} \
     --visual_encoder ${visual_encoder} \
     --variant ${variant} \
-    --seed 0 \
     --temporal_agg \
+    --seed 0 \
     --predict_value ${predict_value} \
     --obs_type ${obs_type} \
     --episode_len ${episode_length}  \

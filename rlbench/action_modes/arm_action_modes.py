@@ -320,7 +320,7 @@ class EndEffectorPoseViaIK(ArmActionMode):
         relative_to = None if self._frame == RelativeFrame.WORLD else scene.robot.arm.get_tip()
 
         try:
-            joint_positions = scene.robot.arm.solve_ik_via_jacobian(
+            joint_positions = scene.robot.arm.solve_ik_via_sampling(
                 action[:3], quaternion=action[3:], relative_to=relative_to)
             scene.robot.arm.set_joint_target_positions(joint_positions)
         except IKError as e:

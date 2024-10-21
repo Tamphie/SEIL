@@ -24,7 +24,7 @@ class SEILinference(PolicyInferenceAPI):
     def _initialize_environment(self):
         from rlbench.environment import Environment
         from rlbench.action_modes.action_mode import MoveArmThenGripper
-        from rlbench.action_modes.arm_action_modes import EndEffectorPoseViaIK,JointPosition
+        from rlbench.action_modes.arm_action_modes import EndEffectorPoseViaIK,JointPosition,EndEffectorPoseViaPlanning
         from rlbench.action_modes.gripper_action_modes import Discrete
         from rlbench.observation_config import ObservationConfig
        
@@ -55,6 +55,7 @@ class SEILinference(PolicyInferenceAPI):
         # rgb_images = []
         if t == 0:
             descriptions, obs = self.task_env.reset()
+            print(f"reset successfully")
         else:
             obs = self.task_env.get_observation()
         
@@ -126,10 +127,34 @@ class SEILinference(PolicyInferenceAPI):
             # gripper = [1.0]  # Always open
             # return np.concatenate([arm, gripper], axis=-1)
 
-            obs, reward, terminate = self.task_env.step(action)
+            # obs, reward, terminate = self.task_env.step(action)
+            self.task_env.step(action)
+            # self.test_by_dummy(action, t)
+
         else:
             obs, reward, terminate = self.task_env.step(action)
 
+    def test_by_collect(self,t):
+        action = np.load(
+            f"data/{self.config['task_name']}/episode_0/gripper_states.npy"
+        ).astype(np.float32)
+        action = action[t,:]
+        print(f"{t} step action is {action}")
+        self.task_env.step(action)
+    
+    def test_by_dummy(self,action,t):
+        from pyrep.objects.dummy import Dummy
+        # from pyrep import PyRep
+        if t == 0: 
+            predicted_target = Dummy.create(size=0.05)
+            predicted_target.set_name('Predicted_EEF_Target')
+        else :
+            predicted_target = Dummy('Predicted_EEF_Target')
+        predicted_target.set_position(action[:3])
+        predicted_target.set_quaternion(action[3:-1])
+        self.task_env._pyrep.step()
+        print(f"{t} dummy action is {action}")
+    
 
     def quaternion_to_6d(self, q):
         # Convert quaternion to rotation matrix
@@ -257,10 +282,12 @@ def main():
 
     # Initialize the PolicyInferenceAPI
     inference = SEILinference(config)
-
-    # Execute the inference
-    inference.run_inference(ckpt_name=args["ckpt_name"])
-    print(f"Inference complete for checkpoint: {args['ckpt_name']}")
+    try:
+        # Execute the inference
+        inference.run_inference(ckpt_name=args["ckpt_name"])
+    
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt")
 
 
 if __name__ == "__main__":
