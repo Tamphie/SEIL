@@ -151,18 +151,31 @@ def save_demo_IL(demo, example_path):
         example_path, RIGHT_SHOULDER_RGB_FOLDER)
     right_shoulder_depth_path = os.path.join(
         example_path, RIGHT_SHOULDER_DEPTH_FOLDER)
+    
+    front_rgb_path= os.path.join(
+        example_path, FRONT_RGB_FOLDER)
+    front_depth_path= os.path.join(
+        example_path, FRONT_DEPTH_FOLDER)
+    front_mask_path = os.path.join(
+        example_path, FRONT_MASK_FOLDER)
+    
     joint_velocities_path = os.path.join(
         example_path, JOINT_VELOCITIES_FOLDER)
     joint_positions_path = os.path.join(
         example_path, JOINT_POSITIONS_FOLDER)
+    
     front_point_cloud_path = os.path.join(
         example_path,FRONT_PCD_FOLDER)
+    
     gripper_states_path = os.path.join(
         example_path,GRIPPER_STATES_FOLDER)
     
 
     check_and_make(right_shoulder_rgb_path)
     check_and_make(right_shoulder_depth_path)
+    check_and_make(front_rgb_path)
+    check_and_make(front_depth_path)
+    check_and_make(front_mask_path)
     check_and_make(front_point_cloud_path)
     
 
@@ -180,12 +193,26 @@ def save_demo_IL(demo, example_path):
         right_shoulder_rgb = Image.fromarray(obs.right_shoulder_rgb)
         right_shoulder_depth = utils.float_array_to_rgb_image(
             obs.right_shoulder_depth, scale_factor=DEPTH_SCALE)
+        
+        front_rgb = Image.fromarray(obs.front_rgb)
+        front_depth = utils.float_array_to_rgb_image(
+            obs.front_depth, scale_factor=DEPTH_SCALE)
+        front_mask = Image.fromarray((obs.front_mask * 255).astype(np.uint8))
+
         front_point_cloud = np.array(obs.front_point_cloud)
 
         right_shoulder_rgb.save(
             os.path.join(right_shoulder_rgb_path, IMAGE_FORMAT % i))
         right_shoulder_depth.save(
             os.path.join(right_shoulder_depth_path, IMAGE_FORMAT % i))
+        
+        front_rgb.save(
+            os.path.join(front_rgb_path, IMAGE_FORMAT % i))
+        front_depth.save(
+            os.path.join(front_depth_path, IMAGE_FORMAT % i))
+        front_mask.save(
+            os.path.join(front_mask_path, IMAGE_FORMAT % i))
+
         np.save(
             os.path.join(front_point_cloud_path, PCD_FORMAT % i), front_point_cloud)
         print(front_point_cloud.shape)

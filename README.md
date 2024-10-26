@@ -226,7 +226,7 @@ pip install PyQt5
 This is how to build task:
 You can configure the saved_path and task in the scripts
 ```bash
-cd SEIL/SEIL
+cd SEIL/
 python3 tools/task_builder.py
 
 ```
