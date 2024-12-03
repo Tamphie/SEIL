@@ -47,6 +47,57 @@ class Scene(object):
         self._cam_overhead = VisionSensor('cam_overhead')
         self._cam_wrist = VisionSensor('cam_wrist')
         self._cam_front = VisionSensor('cam_front')
+        
+        # front_position = self._cam_front.get_position()
+        # # print("Front Camera Position:", front_position)
+
+        # switched_position = [front_position[1], front_position[0], front_position[2]]
+        # new_position = switched_position + 0.7 * (self._cam_over_shoulder_left.get_position() - switched_position)
+        # self._cam_front.set_position(new_position)
+
+        # front_orientation = self._cam_front.get_orientation()
+        # # print("Front Camera Position:", front_position)
+
+        # switched_position = [-front_orientation[0], -front_orientation[1], front_orientation[2]]
+        # self._cam_front.set_orientation(switched_position)
+        # print("Front Camera Position:", self._cam_front.get_position())
+
+        # shoulder_left_position = self._cam_over_shoulder_left.get_position()
+        # print("Over Shoulder Left Camera Position:", shoulder_left_position)
+
+        # shoulder_right_position = self._cam_over_shoulder_right.get_position()
+        # print("Over Shoulder Right Camera Position:", shoulder_right_position)
+
+        # overhead_position = self._cam_overhead.get_position()
+        # print("Overhead Camera Position:", overhead_position)
+
+        # wrist_position = self._cam_wrist.get_position()
+        # print("Wrist Camera Position:", wrist_position)
+        
+
+        # print("Front Camera Orientation:", self._cam_front.get_orientation())
+
+        # print("Over Shoulder Left Camera Orientation:", self._cam_over_shoulder_left.get_orientation())
+
+        # print("Over Shoulder Right Camera Orientation:", self._cam_over_shoulder_right.get_orientation())
+        
+        # self._cam_front.set_orientation([1,1,2])
+        # self._cam_over_shoulder_right.set_orientation([-1,1,1])
+        # self._cam_over_shoulder_left.set_orientation([1,1,-1])
+        # self._cam_overhead.set_orientation([1,-1,1])
+        # print("Overhead Camera Orientation:", self._cam_overhead.get_orientation())
+        
+        # print("Wrist Camera Orientation:", self._cam_wrist.get_orientation())
+
+
+        
+
+        # # Set this new position to the front camera
+        # self._cam_overhead.set_position(new_overhead_position)
+
+        # overhead_position = self._cam_overhead.get_position()
+        # print("Front Camera Position:", overhead_position)
+
         self._cam_over_shoulder_left_mask = VisionSensor(
             'cam_over_shoulder_left_mask')
         self._cam_over_shoulder_right_mask = VisionSensor(

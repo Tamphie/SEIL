@@ -58,17 +58,24 @@ class SEILinference(PolicyInferenceAPI):
             print(f"reset successfully")
         else:
             obs = self.task_env.get_observation()
-        
-        gripper_open = np.array(obs.gripper_open).reshape(1)
-        gripper_pose = np.array(obs.gripper_pose)
-        ee_pos = gripper_pose[:3]
-        ee_quat = gripper_pose[3:7]
-        ee_rot_6d = self.quaternion_to_6d(ee_quat)
-        gripper_states = np.concatenate([ee_pos,ee_rot_6d, gripper_open])
-        qpos_numpy = np.array(gripper_states)
-        qpos = self._pre_process(qpos_numpy)
-        qpos = torch.from_numpy(qpos).float().cuda().unsqueeze(0)
-        # print(f"Shape of qpos at timestep {t}during inference : {qpos.shape}") [1,10]
+        if self.config["predict_value"] == "joint_states":
+            gripper_open = np.array(obs.gripper_open).reshape(1)
+            joint_positions = np.array(obs.joint_positions)
+            qpos = np.concatenate([joint_positions,gripper_open])
+            qpos = np.array(qpos)
+            qpos = torch.from_numpy(qpos).float().cuda().unsqueeze(0)
+            print(f"Shape of qpos at timestep {t}during inference : {qpos.shape}")
+        else:
+            gripper_open = np.array(obs.gripper_open).reshape(1)
+            gripper_pose = np.array(obs.gripper_pose)
+            ee_pos = gripper_pose[:3]
+            ee_quat = gripper_pose[3:7]
+            ee_rot_6d = self.quaternion_to_6d(ee_quat)
+            gripper_states = np.concatenate([ee_pos,ee_rot_6d, gripper_open])
+            qpos_numpy = np.array(gripper_states)
+            qpos = self._pre_process(qpos_numpy)
+            qpos = torch.from_numpy(qpos).float().cuda().unsqueeze(0)
+            # print(f"Shape of qpos at timestep {t}during inference : {qpos.shape}") [1,10]
 
         if self.config["obs_type"] == "rgbd":
             # right_shoulder_rgb = Image.fromarray(obs.right_shoulder_rgb)
@@ -132,7 +139,7 @@ class SEILinference(PolicyInferenceAPI):
             # self.test_by_dummy(action, t)
 
         else:
-            obs, reward, terminate = self.task_env.step(action)
+            self.task_env.step(action)
 
     def test_by_collect(self,t):
         action = np.load(
@@ -240,7 +247,10 @@ def parse_arguments():
     parser.add_argument(
         "--lr", type=float, default=1e-5, help="Learning rate for evaluation"
     )
-
+    
+    parser.add_argument(
+        "--state_dim", type=int, default=10, help="state_dimension"
+    )
     return vars(parser.parse_args())
 
 def main():
@@ -268,7 +278,7 @@ def main():
         "dec_layers": args["dec_layers"],
         "nheads": args["nheads"],
         "camera_names": ["top"],  # Assuming camera_names is ["top"]
-        "state_dim": 10,  # TODO
+        "state_dim":  args["state_dim"],  # TODO
     },
     "task_name": args["task_name"],
     "seed": args["seed"],

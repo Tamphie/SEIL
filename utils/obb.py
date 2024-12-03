@@ -3,7 +3,12 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import os
+import copy
 import time
+directory = "data/open_door/episode_1/front_pcd"
+save_path = os.path.join(os.path.dirname(directory), "frame.npy")
+file = "data/open_door/episode_2/front_pcd/0.npy"
+
 def statistical_outlier(door_pcd):
     door_pcd, ind = door_pcd.remove_statistical_outlier(nb_neighbors=130, std_ratio=0.30)
     # each point will need more neighboring points to be considered an inlier (noclean:increase)
@@ -20,14 +25,27 @@ def get_cluster_color(labels,colors):
         color = colors[labels == label][0]  # Get the color for the current label
         print(f"Label {label}: Color {color[:3]}")  # Print only RGB channels
 
-def iterate():
+
+def save_frame(frames):
+    frames = np.array(frames)
+    np.save(save_path, frames)
+
+def visualize_frame():
+    pcd, obb = obb_from_pcd(file)
+    original_obb = o3d.geometry.OrientedBoundingBox(obb.center, obb.R, obb.extent)
+    original_axes = create_axes(original_obb)
+    obb,R = adjust_obb(obb)
+    axes = create_axes(obb)
+    o3d.visualization.draw_geometries([pcd,original_obb,*original_axes])
+    # o3d.visualization.draw_geometries([ pcd,*axes])
+
+def visualize_obb_as_vedio():
     vis = o3d.visualization.Visualizer()
     vis.create_window()
     pcd = o3d.geometry.PointCloud()
     vis.add_geometry(pcd)
     
-    directory = "data/open_door/episode_0/front_pcd"
-    save_path = os.path.join(os.path.dirname(directory), "frame.npy")
+    
     frames = []
     for filename in sorted(os.listdir(directory)):
         
@@ -35,24 +53,22 @@ def iterate():
         
         # Get the point cloud and OBB for the current file
         pcd, obb = obb_from_pcd(file_path)
-        new_obb,R = adjust_obb(obb)
+        vis.add_geometry(pcd)
+        vis.update_geometry(pcd)
+        # Update the point cloud geometry with new points and colors
+        if obb:
+            vis.add_geometry(obb)
+            vis.update_geometry(obb)
+        
+        new_obb = copy.deepcopy(obb)
+        new_obb,R = adjust_obb(new_obb)
         frames.append(R)
-        axes = create_axes(new_obb)
-        # o3d.visualization.draw_geometries([ pcd,*axes])
-    #     vis.add_geometry(pcd)
-    #     vis.update_geometry(pcd)
-    #     # Update the point cloud geometry with new points and colors
-    #     if obb:
-    #         vis.add_geometry(obb)
-    #         vis.update_geometry(obb)
-            
-    #     # Refresh visualization
-    #     vis.poll_events()
-    #     vis.update_renderer()
-    #     time.sleep(0.5)
-
-    frames = np.array(frames)
-    np.save(save_path, frames)
+        # Refresh visualization
+        vis.poll_events()
+        vis.update_renderer()
+        time.sleep(0.5)
+    return frames
+    
     # vis.destroy_window()
 
 def adjust_obb(obb):
@@ -101,7 +117,7 @@ def create_axes(obb):
     y_axis.colors = o3d.utility.Vector3dVector([(0, 1, 0)])  # Green for y-axis
 
     z_axis = o3d.geometry.LineSet(
-        points=o3d.utility.Vector3dVector([center, center + R[:, 2] * extents[0]]),
+        points=o3d.utility.Vector3dVector([center, center + R[:, 2] * 2*extents[0]]),
         lines=o3d.utility.Vector2iVector([[0, 1]])
     )
     z_axis.colors = o3d.utility.Vector3dVector([(0, 0, 1)])  # Blue for z-axis
@@ -201,76 +217,14 @@ def obb_from_rgbd():
     print("Visualizing door point cloud with OBB...")
     o3d.visualization.draw_geometries([door_pcd, obb])
 
-def filter_with_depth():
-    
-    # Load point cloud, depth, and mask data
-    points = np.load("data/open_door/episode_1/front_pcd/0.npy").reshape(-1, 3)
-    depth_image = cv2.imread("data/open_door/episode_1/front_depth/0.png", cv2.IMREAD_UNCHANGED)
-    # Camera intrinsic parameters (adjust as needed for your setup)
-    
-    print(f"depth_image:{depth_image.shape}")
-    fx, fy = 175.8385604,175.8385604  # Focal lengths
-    cx, cy = 64,64  # Optical center
-
-    # Convert point cloud to an Open3D point cloud object
+def visualize_pcd():
+    points = np.load("data/open_door/episode_1/front_pcd/0.npy")
+    points = points.reshape(-1, 3)
+    print(f"shape:{points.shape}")
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(points)
+    o3d.visualization.draw_geometries([pcd])
 
-    # Filter out points that are occluded based on the depth map
-    filtered_points = []
-    for point in points:
-        x, y, z = point
-        u = int((x * fx / z) + cx)  # Project 3D point to 2D pixel u-coordinate
-        v = int((y * fy / z) + cy)  # Project 3D point to 2D pixel v-coordinate
-
-        # Check if the point lies within the image boundaries
-        # if 0 <= u < depth_image.shape[1] and 0 <= v < depth_image.shape[0]:
-        #     # Only include the point if it matches the depth value in the depth image
-        #     print(f"depth_image[v, u]: {depth_image[v, u]}")
-            # if abs(z - depth_image[v, u]) < 0.01:  # Threshold for matching depth
-            #     filtered_points.append(point)
-
-    # Convert the filtered points to an Open3D point cloud for visualization
-    filtered_pcd = o3d.geometry.PointCloud()
-    filtered_pcd.points = o3d.utility.Vector3dVector(np.array(filtered_points))
-
-    # Visualize the filtered point cloud
-    print("Visualizing filtered point cloud (matching camera perspective)...")
-    o3d.visualization.draw_geometries([filtered_pcd])
-
-def filter_with_mask():
-   
-    # Load the point cloud from the .npy file
-    points = np.load("data/open_door/episode_1/front_pcd/0.npy").reshape(-1, 3)
-
-    # Load the mask image
-    mask_image = cv2.imread("data/open_door/episode_1/front_mask/0.png", cv2.IMREAD_GRAYSCALE)
-
-    # Camera intrinsics (adjust these values to your camera setup)
-    fx, fy = 175.8385604,175.8385604  # Focal lengths
-    cx, cy = 64,64  # Optical center
-
-    # Filter points using the mask
-    filtered_points = []
-    for point in points:
-        x, y, z = point
-        # Project the 3D point to 2D pixel coordinates
-        u = int((x * fx / z) + cx)
-        v = int((y * fy / z) + cy)
-
-        # Check if the 2D projection is within the image boundaries
-        if 0 <= u < mask_image.shape[1] and 0 <= v < mask_image.shape[0]:
-            # Check if this point corresponds to the door in the mask
-            if mask_image[v, u] == 255:  # Assuming door pixels are labeled with 255
-                filtered_points.append(point)
-
-    # Convert the filtered points to an Open3D point cloud
-    filtered_pcd = o3d.geometry.PointCloud()
-    filtered_pcd.points = o3d.utility.Vector3dVector(np.array(filtered_points))
-
-    # Visualize the filtered point cloud
-    print("Visualizing filtered point cloud (door only)...")
-    o3d.visualization.draw_geometries([filtered_pcd])
 
 def get_intrinsics():
     # Assuming 'env' is an instance of the class containing get_scene_data
@@ -307,6 +261,6 @@ def get_intrinsics():
 
 
 if __name__ == "__main__":
-    iterate()
+    visualize_frame()
 
 

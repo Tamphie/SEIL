@@ -188,7 +188,10 @@ def save_demo_IL(demo, example_path):
 
         gripper_open = np.array(obs.gripper_open).reshape(1)
         gripper_pose = np.array(obs.gripper_pose)
+        joint_states = np.array(obs.joint_velocities)
+
         gripper_states = np.concatenate([gripper_pose, gripper_open])
+        joint_states = np.concatenate([joint_states, gripper_open])
 
         right_shoulder_rgb = Image.fromarray(obs.right_shoulder_rgb)
         right_shoulder_depth = utils.float_array_to_rgb_image(
@@ -218,7 +221,7 @@ def save_demo_IL(demo, example_path):
         print(front_point_cloud.shape)
         
         joint_velocities_list.append(obs.joint_velocities)   
-        joint_positions_list.append(obs.joint_positions)
+        joint_positions_list.append(joint_states)
         gripper_states_list.append(gripper_states)
         # front_point_cloud_list.append(obs.front_point_cloud)
         
