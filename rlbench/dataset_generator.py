@@ -2,7 +2,7 @@ import argparse
 import os
 import pickle
 from multiprocessing import Manager, Process
-
+from pyrep.objects.object import Object
 import numpy as np
 from PIL import Image
 from pyrep.const import RenderMode
@@ -146,7 +146,7 @@ def save_demo(demo, example_path):
 def save_demo_IL(demo, example_path):
 
     # Save image data first, and then None the image data, and pickle
-  
+    
     right_shoulder_rgb_path = os.path.join(
         example_path, RIGHT_SHOULDER_RGB_FOLDER)
     right_shoulder_depth_path = os.path.join(
@@ -163,7 +163,8 @@ def save_demo_IL(demo, example_path):
         example_path, JOINT_VELOCITIES_FOLDER)
     joint_positions_path = os.path.join(
         example_path, JOINT_POSITIONS_FOLDER)
-    
+    task_data_path = os.path.join(
+        example_path,TASK_DATA_FOLDER)
     front_point_cloud_path = os.path.join(
         example_path,FRONT_PCD_FOLDER)
     
@@ -182,13 +183,15 @@ def save_demo_IL(demo, example_path):
     joint_velocities_list = []
     joint_positions_list = []
     gripper_states_list = []
+    task_data_list = []
     # front_point_cloud_list =[]
 
     for i, obs in enumerate(demo):
-
+       
         gripper_open = np.array(obs.gripper_open).reshape(1)
         gripper_pose = np.array(obs.gripper_pose)
         joint_states = np.array(obs.joint_velocities)
+        task_data = np.array(obs.task_low_dim_state)
 
         gripper_states = np.concatenate([gripper_pose, gripper_open])
         joint_states = np.concatenate([joint_states, gripper_open])
@@ -203,7 +206,7 @@ def save_demo_IL(demo, example_path):
         front_mask = Image.fromarray((obs.front_mask * 255).astype(np.uint8))
 
         front_point_cloud = np.array(obs.front_point_cloud)
-
+        
         right_shoulder_rgb.save(
             os.path.join(right_shoulder_rgb_path, IMAGE_FORMAT % i))
         right_shoulder_depth.save(
@@ -223,6 +226,7 @@ def save_demo_IL(demo, example_path):
         joint_velocities_list.append(obs.joint_velocities)   
         joint_positions_list.append(joint_states)
         gripper_states_list.append(gripper_states)
+        task_data_list.append(task_data)
         # front_point_cloud_list.append(obs.front_point_cloud)
         
         # We save the images separately, so set these to None for pickling.
@@ -256,6 +260,8 @@ def save_demo_IL(demo, example_path):
     np.save(gripper_states_path, np.array(gripper_states_list))
     print(np.array(gripper_states_list).shape)
 
+    np.save(task_data_path, np.array(task_data_list))
+    print(np.array(task_data_list).shape)
     # np.save(front_point_cloud_path, np.array(front_point_cloud_list))
     # print(np.array(front_point_cloud_list).shape)
        
@@ -350,6 +356,12 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks, args):
             t = tasks[task_index.value]
 
         task_env = rlbench_env.get_task(t)
+        
+        door_frame = Object.get_object('door_frame_joint')
+        # pose = door_frame.get_pose()
+        # print(f"Pose of door_frame: {pose}")
+#        [ 4.29991245e-01 -6.29221834e-03  1.22159278e+00 -6.63820583e-06
+#   1.00000000e+00  4.25675671e-06 -1.15483999e-05]  (X,Y,Z,Qx,Qy,Qz,Qw) 
         task_env.set_variation(my_variation_count)
         descriptions, _ = task_env.reset()
         task_path =  os.path.join(
@@ -363,9 +375,6 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks, args):
         with open(os.path.join(
                 variation_path, VARIATION_DESCRIPTIONS), 'wb') as f:
             pickle.dump(descriptions, f)
-
-        # episodes_path = os.path.join(variation_path, EPISODES_FOLDER)
-        # check_and_make(episodes_path)
 
         abort_variation = False
         for ex_idx in range(args.episodes_per_task):

@@ -101,8 +101,10 @@ class Task(object):
                 elif objtype == ObjectType.FORCE_SENSOR:
                     empty_len += 6
                 state.extend(np.zeros((empty_len,)).tolist())
+                state.append(None)
             else:
                 state.extend(np.array(obj.get_pose()))
+                state.append(obj.get_name())
                 if obj.get_type() == ObjectType.JOINT:
                     state.extend([Joint(obj.get_handle()).get_joint_position()])
                 elif obj.get_type() == ObjectType.FORCE_SENSOR:

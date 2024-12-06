@@ -5,6 +5,7 @@ from pyrep import PyRep
 from pyrep.const import ObjectType
 from pyrep.errors import ConfigurationPathError
 from pyrep.objects import Dummy
+from pyrep.objects.object import Object
 from pyrep.objects.shape import Shape
 from pyrep.objects.vision_sensor import VisionSensor
 
@@ -223,7 +224,12 @@ class Scene(object):
 
     def get_observation(self) -> Observation:
         tip = self.robot.arm.get_tip()
-
+        
+        # TODO: this is related to the task itself
+        # door = Object.get_object('door_frame_joint')
+        # door_pose=(
+        #     np.array(door.get_pose())
+        # ),
         joint_forces = None
         if self._obs_config.joint_forces:
             fs = self.robot.arm.get_joint_forces()

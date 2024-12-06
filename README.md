@@ -265,3 +265,10 @@ export ..
 pip install opencv-python-headless
 cd SEIL/
 bash scripts/inference.sh
+
+```
+To read npy data:
+```bash 
+echo "import numpy as np; data = np.load('data/open_door/episode_0/task_data.npy');print(data[0])" > print_first_line.py
+python3 print_first_line.py
+```

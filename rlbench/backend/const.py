@@ -22,6 +22,7 @@ VARIATIONS_FOLDER = 'variation%d'
 JOINT_VELOCITIES_FOLDER = 'joint_velocities'
 JOINT_POSITIONS_FOLDER = 'joint_positions'
 GRIPPER_STATES_FOLDER = 'gripper_states'
+TASK_DATA_FOLDER = 'task_data'
 LOW_DIM_PICKLE = 'low_dim_obs.pkl'
 VARIATION_DESCRIPTIONS = 'variation_descriptions.pkl'
 
