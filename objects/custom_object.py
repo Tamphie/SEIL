@@ -32,7 +32,11 @@ class CustomObject:
                 - The closest point on the other object (np.ndarray of [x, y, z])
         """
         distance_data = sim.simCheckDistance(self._object.get_handle(), other.get_handle(), -1)
+        distanceSegment = sim.simAddDrawingObject(sim.sim_drawing_lines, 4, 0, -1, 1, [0, 1, 0])
 
+        if distance_data[-1] > 0:
+                sim.simAddDrawingObjectItem(distanceSegment, None)
+                sim.simAddDrawingObjectItem(distanceSegment, distance_data[:6])
         # # Extract the distance and closest points from the return value
         # obj1_point = np.array(distance_data[:3], dtype=np.float64)  # [obj1X, obj1Y, obj1Z]
         # obj2_point = np.array(distance_data[3:6], dtype=np.float64)  # [obj2X, obj2Y, obj2Z]

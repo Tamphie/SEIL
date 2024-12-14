@@ -9,15 +9,6 @@ directory = "data/open_door/episode_1/front_pcd"
 save_path = os.path.join(os.path.dirname(directory), "frame.npy")
 file = "data/open_door/episode_2/front_pcd/0.npy"
 
-def statistical_outlier(door_pcd):
-    door_pcd, ind = door_pcd.remove_statistical_outlier(nb_neighbors=130, std_ratio=0.30)
-    # each point will need more neighboring points to be considered an inlier (noclean:increase)
-    # treshold of distance from nearby points of outlier to be removed (noclean:decrease)
-    # Perform plane segmentation to isolate the flat door surface
-    plane_model, inliers = door_pcd.segment_plane(distance_threshold=0.01, ransac_n=3, num_iterations=1000)
-    inlier_cloud = door_pcd.select_by_index(inliers)
-    inlier_cloud.paint_uniform_color([0, 1, 0])  # Color the inlier points green for visualization
-    return inlier_cloud
 
 def get_cluster_color(labels,colors):
     unique_labels = np.unique(labels[labels >= 0])  # Ignore noise (-1 labels)
@@ -39,7 +30,7 @@ def visualize_frame():
     o3d.visualization.draw_geometries([pcd,original_obb,*original_axes])
     # o3d.visualization.draw_geometries([ pcd,*axes])
 
-def visualize_obb_as_vedio():
+def visualize_obb_as_video():
     vis = o3d.visualization.Visualizer()
     vis.create_window()
     pcd = o3d.geometry.PointCloud()
@@ -181,41 +172,6 @@ def get_obb_parameter(obb):
     print(f"OBB Center: {obb_center}")
     print(f"OBB Extents (Lengths along axes): {obb_extents}")
     print(f"OBB Rotation Matrix:\n {obb_rotation_matrix}")
-
-def obb_from_rgbd():
-   
-    depth_image = cv2.imread("data/open_door/episode_1/front_depth/0.png", cv2.IMREAD_UNCHANGED)  # Load depth data
-    mask = cv2.imread("data/open_door/episode_1/front_mask/0.png",cv2.IMREAD_UNCHANGED)  # Load mask where door pixels are marked
-
-    # Assume we know the camera intrinsics (fx, fy, cx, cy)
-    fx, fy = 175.8385604,175.8385604  # Focal lengths
-    cx, cy = 64,64  # Optical center
-    
-    # Convert masked depth pixels to 3D coordinates (assuming door mask is labeled with 1)
-    door_points = []
-    for v in range(depth_image.shape[0]):
-        for u in range(depth_image.shape[1]):
-            if mask[v, u] == 1:  # Only process door pixels
-                z = depth_image[v, u]
-                if z > 0:  # Valid depth
-                    x = (u - cx) * z / fx
-                    y = (v - cy) * z / fy
-                    door_points.append([x, y, z])
-
-    # Convert list to a NumPy array
-    door_points = np.array(door_points)
-
-    # Create an Open3D point cloud for the door points
-    door_pcd = o3d.geometry.PointCloud()
-    door_pcd.points = o3d.utility.Vector3dVector(door_points)
-
-    # Compute the Oriented Bounding Box (OBB) for the door
-    obb = door_pcd.get_oriented_bounding_box()
-    obb.color = (1, 0, 0)  # Set OBB color for visualization
-
-    # Visualize the door point cloud with the OBB
-    print("Visualizing door point cloud with OBB...")
-    o3d.visualization.draw_geometries([door_pcd, obb])
 
 def visualize_pcd():
     points = np.load("data/open_door/episode_1/front_pcd/0.npy")

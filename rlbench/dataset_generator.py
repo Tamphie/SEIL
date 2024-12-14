@@ -374,12 +374,6 @@ def run(i, lock, task_index, variation_count, results, file_lock, tasks, args):
             t = tasks[task_index.value]
 
         task_env = rlbench_env.get_task(t)
-        
-        door_frame = Object.get_object('door_frame_joint')
-        # pose = door_frame.get_pose()
-        # print(f"Pose of door_frame: {pose}")
-#        [ 4.29991245e-01 -6.29221834e-03  1.22159278e+00 -6.63820583e-06
-#   1.00000000e+00  4.25675671e-06 -1.15483999e-05]  (X,Y,Z,Qx,Qy,Qz,Qw) 
         task_env.set_variation(my_variation_count)
         descriptions, _ = task_env.reset()
         task_path =  os.path.join(
