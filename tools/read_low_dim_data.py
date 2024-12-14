@@ -12,7 +12,8 @@ def quaternion_to_euler(quaternion):
     yaw, pitch, roll = rotation.as_euler('zyx', degrees=True)  # ZYX convention (yaw, pitch, roll)
     return yaw, pitch, roll
 
-def extract_door_frame_pose(file_path):
+def extract_door_frame_pose():
+    file_path = "data/open_door/episode_1/task_data.npy"
     """
     Extract and print the pose of the door frame for each row in the .npy file.
 
@@ -38,6 +39,53 @@ def extract_door_frame_pose(file_path):
             previous_pose = current_pose
         
 
-# Example usage
-file_path = "data/open_door/episode_1/task_data.npy"  # Replace with the correct file path
-extract_door_frame_pose(file_path)
+
+def extract_point():
+
+
+    # File paths
+    pcd_base_path = "data/open_door/episode_0/pcd_from_mesh"
+    dist_data_path = "data/open_door/episode_0/dist_data.npy"
+
+    # Load dist_data
+    dist_data = np.load(dist_data_path)
+
+    # Determine the reference point from dist_data
+    # Find the row with the smallest distance (last element of each row)
+    min_distance_index = np.argmin(dist_data[:, -1])
+    reference_point = dist_data[min_distance_index, :3]  # Extract first 3 elements
+    print(f"min_dist:{min_distance_index},dist: {dist_data[min_distance_index, -1] } point: {reference_point}")
+
+    # Initialize output
+    results = []
+    tolerance = 1e-4
+    # Iterate through steps to compare with the consistent reference point
+    for step in range(len(dist_data)):  # Assuming one step per pcd_from_mesh file
+        # Load pcd_from_mesh for the current step
+        pcd_file = f"{pcd_base_path}/{step}.npy"
+        pcd_from_mesh = np.load(pcd_file)
+
+        # Check if the reference point exists in the current point cloud
+        match_indices = np.where(np.all(np.isclose(pcd_from_mesh, reference_point, atol=tolerance), axis=1))[0]
+        if match_indices.size > 0:
+            results.append((step, match_indices.tolist()))  # Store step index and point index
+        else:
+            results.append((step, None))  # No match found
+
+    # Output results
+    for step, result in results:
+        print(f"Step {step}: Point Index in PCD = {result}")
+
+def print_dis():
+
+
+    # File paths
+    pcd_base_path = "data/open_door/episode_0/pcd_from_mesh"
+    dist_data_path = "data/open_door/episode_0/dist_data.npy"
+
+    # Load dist_data
+    dist_data = np.load(dist_data_path)
+    for step in range(len(dist_data)): 
+        print(f"Step {step}: {dist_data[step, -1]}")
+
+print_dis()

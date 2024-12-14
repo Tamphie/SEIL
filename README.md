@@ -243,7 +243,7 @@ bash scripts/generate_dataset_IL.sh
 ```
 To see the collected image in MobaXterm
 ``` bash
-eog /home/tongmiao/SEIL/data/open_door/episode_1/front_rgb/0.png 
+eog /home/tongmiao/SEIL/data/open_door/episode_0/front_rgb/0.png 
 
 
 ```

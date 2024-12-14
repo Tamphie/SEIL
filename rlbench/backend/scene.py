@@ -8,7 +8,7 @@ from pyrep.objects import Dummy
 from pyrep.objects.object import Object
 from pyrep.objects.shape import Shape
 from pyrep.objects.vision_sensor import VisionSensor
-
+from rlbench.tasks.open_door import OpenDoor
 from rlbench.backend.exceptions import (
     WaypointError, BoundaryError, NoWaypointsError, DemoError)
 from rlbench.backend.observation import Observation
@@ -225,11 +225,6 @@ class Scene(object):
     def get_observation(self) -> Observation:
         tip = self.robot.arm.get_tip()
         
-        # TODO: this is related to the task itself
-        # door = Object.get_object('door_frame_joint')
-        # door_pose=(
-        #     np.array(door.get_pose())
-        # ),
         joint_forces = None
         if self._obs_config.joint_forces:
             fs = self.robot.arm.get_joint_forces()
@@ -364,7 +359,17 @@ class Scene(object):
             task_low_dim_state=(
                 self.task.get_low_dim_state() if
                 self._obs_config.task_low_dim_state else None),
-            misc=self._get_misc())
+            misc=self._get_misc(),
+            pcd_from_mesh=(
+                self.task.get_door_pcd() if
+                type(self.task).__name__ == "OpenDoor" else None),
+            dist_data=(
+                self.task.check_door_distance(self.robot.gripper) if
+                type(self.task).__name__ == "OpenDoor" else None)
+            
+           
+            )
+            
         obs = self.task.decorate_observation(obs)
         return obs
 

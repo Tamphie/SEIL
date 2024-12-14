@@ -171,19 +171,25 @@ def save_demo_IL(demo, example_path):
     gripper_states_path = os.path.join(
         example_path,GRIPPER_STATES_FOLDER)
     
-
+    pcd_from_mesh_path = os.path.join(
+        example_path, 'pcd_from_mesh')
+    dist_data_path = os.path.join(
+        example_path, 'dist_data')
+    
     check_and_make(right_shoulder_rgb_path)
     check_and_make(right_shoulder_depth_path)
     check_and_make(front_rgb_path)
     check_and_make(front_depth_path)
     check_and_make(front_mask_path)
     check_and_make(front_point_cloud_path)
+    check_and_make(pcd_from_mesh_path) 
     
 
     joint_velocities_list = []
     joint_positions_list = []
     gripper_states_list = []
     task_data_list = []
+    dist_data_list = []
     # front_point_cloud_list =[]
 
     for i, obs in enumerate(demo):
@@ -221,8 +227,16 @@ def save_demo_IL(demo, example_path):
 
         np.save(
             os.path.join(front_point_cloud_path, PCD_FORMAT % i), front_point_cloud)
-        print(front_point_cloud.shape)
-        
+        # print(front_point_cloud.shape)
+
+        if obs.pcd_from_mesh is not None:
+            np.save(os.path.join(pcd_from_mesh_path, PCD_FORMAT % i), obs.pcd_from_mesh)
+        else:
+            print("obs.pcd_from_mesh is None")
+        if obs.dist_data is not None:
+            dist_data_list.append(obs.dist_data)
+        else:
+            print("obs.dist_data is None")
         joint_velocities_list.append(obs.joint_velocities)   
         joint_positions_list.append(joint_states)
         gripper_states_list.append(gripper_states)
@@ -251,17 +265,21 @@ def save_demo_IL(demo, example_path):
         obs.front_point_cloud = None
         obs.front_mask = None
 
+
     np.save(joint_velocities_path, np.array(joint_velocities_list))
-    print(np.array(joint_velocities_list).shape)
+    # print(np.array(joint_velocities_list).shape) 7
 
     np.save(joint_positions_path, np.array(joint_positions_list))
-    print(np.array(joint_positions_list).shape)
+    # print(np.array(joint_positions_list).shape) 8
 
     np.save(gripper_states_path, np.array(gripper_states_list))
-    print(np.array(gripper_states_list).shape)
+    # print(np.array(gripper_states_list).shape) 8
 
     np.save(task_data_path, np.array(task_data_list))
     print(np.array(task_data_list).shape)
+
+    if dist_data_list is not None:
+        np.save(dist_data_path, np.array(dist_data_list))
     # np.save(front_point_cloud_path, np.array(front_point_cloud_list))
     # print(np.array(front_point_cloud_list).shape)
        
@@ -422,7 +440,7 @@ def parse_args():
     parser.add_argument('--image_size', nargs=2, type=int, default=[128, 128], help='The size of the images to save.')
     parser.add_argument('--renderer', type=str, choices=['opengl', 'opengl3'], default='opengl3', help='The renderer to use. opengl does not include shadows, but is faster.')
     parser.add_argument('--processes', type=int, default=1, help='The number of parallel processes during collection.')
-    parser.add_argument('--episodes_per_task', type=int, default=10, help='The number of episodes to collect per task.')
+    parser.add_argument('--episodes_per_task', type=int, default=1, help='The number of episodes to collect per task.')
     parser.add_argument('--variations', type=int, default=-1, help='Number of variations to collect per task. -1 for all.')
     parser.add_argument('--arm_max_velocity', type=float, default=1.0, help='Max arm velocity used for motion planning.')
     parser.add_argument('--arm_max_acceleration', type=float, default=4.0, help='Max arm acceleration used for motion planning.')
