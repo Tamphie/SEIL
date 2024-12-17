@@ -14,6 +14,7 @@ __pycache__/
 SEIL/data/
 .idea/
 check_point/
+assets/
 # C extensions
 *.so
 

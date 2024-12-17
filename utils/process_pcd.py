@@ -1,6 +1,8 @@
 import numpy as np
 import open3d as o3d
 from typing import List
+import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import os
 from scipy.spatial.transform import Rotation as R
@@ -222,7 +224,7 @@ class PointCloudFromObservation(PointCloudBase):
         axes = self.create_axes_from_obb(obb)
         o3d.visualization.draw_geometries([self.pcd,obb,*axes])
 
-    def visualize_pcd_bb_as_vedio(self, delay: float = 0.5):
+    def visualize_pcd_bb_video(self, delay: float = 0.5):
         
         """
         Visualize point clouds from multiple steps as a video.
@@ -265,7 +267,7 @@ class PointCloudFromModel(PointCloudBase):
     """
     Class for processing point cloud data obtained from object models.
     """
-    def __init__(self, pcd_dir: str, task_data_path: str, dist_data_path: str, step: int = 0):
+    def __init__(self, pcd_dir: str, step: int = 0):
         """
         Initialize the model point cloud class with task data for poses.
 
@@ -274,9 +276,10 @@ class PointCloudFromModel(PointCloudBase):
         """
         super().__init__(pcd_dir, step)
         self.step = step
-        self.task_data_path = task_data_path
-        self.dist_data_path = dist_data_path
-        self.poses = self.extract_poses()
+        base_dir = os.path.dirname(pcd_dir)
+        self.task_data_path = os.path.join(base_dir, 'task_data.npy')
+        self.dist_data_path = os.path.join(base_dir, 'dist_data.npy')
+    
 
     def extract_poses(self, change: bool = False) -> List[np.ndarray]:
         """
@@ -353,6 +356,11 @@ class PointCloudFromModel(PointCloudBase):
         dist_data = np.load(self.dist_data_path)
         min_distance_index = np.argmin(dist_data[:, -1])
         reference_point = dist_data[min_distance_index, :3]  # Extract first 3 elements
+        point_data = np.array(dist_data[:,:3])
+        combined_points = np.vstack((self.points, point_data))
+        combined_pcd = o3d.geometry.PointCloud()
+        combined_pcd.points = o3d.utility.Vector3dVector(combined_points)
+        o3d.visualization.draw_geometries([combined_pcd])
         print(f"min_dist:{min_distance_index},dist: {dist_data[min_distance_index, -1] } point: {reference_point}")
 
         # Initialize output
@@ -379,12 +387,13 @@ class PointCloudFromModel(PointCloudBase):
         for step in range(len(dist_data)): 
             print(f"Step {step}: {dist_data[step, -1]* 1000}")
 
+
+
+
 if __name__ == "__main__":
 
-    # pcd = PointCloudFromModel(
-    #     pcd_dir = "data/open_door/episode_0/pcd_from_mesh", 
-    #     dist_data_path = "data/open_door/episode_0/dist_data.npy",
-    #     task_data_path = "data/open_door/episode_0/task_data.npy")
-    pcd = PointCloudFromObservation(
-        pcd_dir = "data/open_door/episode_0/front_pcd")
-    pcd.visualize_pcd_bb_as_vedio()
+    pcd1 = PointCloudFromModel(
+        pcd_dir = "data/open_door/episode_0/pcd_from_mesh", 
+        step=179)
+    
+    pcd1.extract_contact_point()

@@ -7,6 +7,7 @@ from pyrep.objects.shape import Shape
 from rlbench.backend.conditions import JointCondition
 from rlbench.backend.task import Task
 from scipy.spatial.transform import Rotation as R
+from objects.custom_object import MeshBase
 
 class OpenDoor(Task):
 
@@ -44,24 +45,27 @@ class OpenDoor(Task):
         if not self._door:
             raise ValueError("Door object 'door_main_visible' not found in the simulation.")
         vertices, indices, normals = self._door.get_mesh()
+        self.mesh_base = MeshBase(vertices, indices, normals)
         pose = np.array(self._door._object.get_pose())  # [x, y, z, qx, qy, qz, qw]
-        position = pose[:3]
-        quaternion = pose[3:]
+        # position = pose[:3]
+        # quaternion = pose[3:]
 
-        # Compute transformation matrix
-        rotation_matrix = R.from_quat(quaternion).as_matrix()
-        transform_matrix = np.eye(4)
-        transform_matrix[:3, :3] = rotation_matrix
-        transform_matrix[:3, 3] = position
+        # # Compute transformation matrix
+        # rotation_matrix = R.from_quat(quaternion).as_matrix()
+        # transform_matrix = np.eye(4)
+        # transform_matrix[:3, :3] = rotation_matrix
+        # transform_matrix[:3, 3] = position
 
-        # Transform vertices from local to world frame
-        door_pcd = []
-        for i in range(0, len(vertices), 3):
-            local_point = np.array([vertices[i], vertices[i+1], vertices[i+2], 1.0])  # Homogeneous coordinates
-            world_point = transform_matrix @ local_point
-            door_pcd.append(world_point[:3])
+        # # Transform vertices from local to world frame
+        # door_pcd = []
+        # for i in range(0, len(vertices), 3):
+        #     local_point = np.array([vertices[i], vertices[i+1], vertices[i+2], 1.0])  # Homogeneous coordinates
+        #     world_point = transform_matrix @ local_point
+        #     door_pcd.append(world_point[:3])
 
-        return np.array(door_pcd, dtype=np.float64)
+        # return np.array(door_pcd, dtype=np.float64)
+        num_samples = 10000
+        return self.mesh_base.generate_pcd(pose, num_samples=num_samples)
     
     def check_door_distance(self, other:'Object') -> list:
         self._door = CustomObject(Object.get_object('door_main_visible'))

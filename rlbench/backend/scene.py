@@ -364,7 +364,7 @@ class Scene(object):
                 self.task.get_door_pcd() if
                 type(self.task).__name__ == "OpenDoor" else None),
             dist_data=(
-                self.task.check_door_distance(self.robot.gripper) if
+                self.task.check_door_distance(self.robot.arm.get_tip()) if
                 type(self.task).__name__ == "OpenDoor" else None)
             
            

@@ -2,7 +2,8 @@ from pyrep.objects.object import Object
 import numpy as np
 from typing import Tuple
 from pyrep.backend import sim
-
+import open3d as o3d
+from scipy.spatial.transform import Rotation as R
 class CustomObject:
     def __init__(self,object_handle: Object):
           self._object = object_handle
@@ -45,3 +46,42 @@ class CustomObject:
         return distance_data
         # return sim.simCheckDistance(
         #     self.get_handle(), other.get_handle(), -1)[6]
+class MeshBase:
+    def __init__(self, vertices, indices, normals):
+        """
+        Initialize the MeshBase class with vertices, indices, and normals.
+        
+        Parameters:
+           vertices (np.ndarray): The vertices of the mesh.
+            indices (np.ndarray): The indices of the mesh faces.
+            normals (np.ndarray): The normals of the mesh.
+        """
+        self.vertices = vertices
+        self.indices = indices
+        self.normals = normals
+    def generate_pcd(self, pose, num_samples = 10000):
+        vertices = np.array(self.vertices).reshape(-1, 3)
+        indices = np.array(self.indices).reshape(-1, 3)
+        
+        mesh = o3d.geometry.TriangleMesh(
+            vertices=o3d.utility.Vector3dVector(vertices),
+            triangles=o3d.utility.Vector3iVector(indices)
+        )
+
+        # Sample points from the mesh
+        pcd = mesh.sample_points_uniformly(number_of_points=num_samples)
+
+        # Transform to world frame
+        position = pose[:3]
+        quaternion = pose[3:]
+        rotation_matrix = R.from_quat(quaternion).as_matrix()
+
+        # Construct transformation matrix
+        transform_matrix = np.eye(4)
+        transform_matrix[:3, :3] = rotation_matrix
+        transform_matrix[:3, 3] = position
+
+        # Apply transformation
+        pcd.transform(transform_matrix)
+
+        return np.asarray(pcd.points)
