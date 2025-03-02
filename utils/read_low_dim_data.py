@@ -40,7 +40,7 @@ def extract_door_frame_pose():
         
 
 
-def extract_contact_spoint():
+def extract_contact_point():
 
 
     # File paths

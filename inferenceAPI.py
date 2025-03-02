@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 from RobotIL.constants import DT
-from utils.utils import set_seed
+# from utils.utils import set_seed
 from RobotIL.policy import ACTPolicy, CNNMLPPolicy, DiffusionPolicy
 from scipy.spatial.transform import Rotation as R
 import numpy as np
@@ -29,7 +29,7 @@ class PolicyInferenceAPI:
 
     def _set_up(self):
         """Sets up the inference process by loading the policy and initializing the environment."""
-        self._initialize_seed()
+        # self._initialize_seed()
         self._load_policy()
         self._initialize_environment()
         self.temporal_agg = self.config.get("temporal_agg", False)
@@ -38,9 +38,9 @@ class PolicyInferenceAPI:
             self.num_queries = self.config["policy_config"]["num_queries"]
             # num_queries default 100 for ACT
 
-    def _initialize_seed(self):
-        """Sets the random seed for reproducibility."""
-        set_seed(self.config["seed"])
+    # def _initialize_seed(self):
+    #     """Sets the random seed for reproducibility."""
+    #     set_seed(self.config["seed"])
 
     def _make_policy(self):
         """Creates a policy instance based on the policy class and configuration."""

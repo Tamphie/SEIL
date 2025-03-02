@@ -24,7 +24,7 @@ class ActionMode(object):
         pass
 
     def action_bounds(self):
-        """Returns the min and max of the action mode."""
+        # """Returns the min and max of the action mode."""
         raise NotImplementedError('You must define your own action bounds.')
 
 
@@ -37,14 +37,19 @@ class MoveArmThenGripper(ActionMode):
     def action(self, scene: Scene, action: np.ndarray):
         arm_act_size = np.prod(self.arm_action_mode.action_shape(scene))
         arm_action = np.array(action[:arm_act_size])
+        print("shape of arm action: ", arm_action.shape)
         ee_action = np.array(action[arm_act_size:])
+        print("shape of ee action: ", ee_action.shape)
         self.arm_action_mode.action(scene, arm_action)
         self.gripper_action_mode.action(scene, ee_action)
 
     def action_shape(self, scene: Scene):
         return np.prod(self.arm_action_mode.action_shape(scene)) + np.prod(
             self.gripper_action_mode.action_shape(scene))
-
+    
+    def action_bounds(self):
+        """Returns the min and max of the action mode."""
+        return np.array(7 * [-10] + [0.0]), np.array(7 * [10] + [1.0])
 
 # RLBench is highly customizable, in both observations and action modes.
 # This can be a little daunting, so below we have defined some

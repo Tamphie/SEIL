@@ -1,0 +1,144 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting git+https://github.com/stepjam/RLBench.git
+  Cloning https://github.com/stepjam/RLBench.git to /tmp/pip-req-build-gesiavlp
+  Running command git clone --filter=blob:none --quiet https://github.com/stepjam/RLBench.git /tmp/pip-req-build-gesiavlp
+  Resolved https://github.com/stepjam/RLBench.git to commit 02720bba4c73fe02eb75df946b8791b806028a9d
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Collecting pyrep@ git+https://github.com/stepjam/PyRep.git (from rlbench==1.2.0)
+  Cloning https://github.com/stepjam/PyRep.git to /tmp/pip-install-akj7udrx/pyrep_482de489497949998bfe3d863ffdac43
+  Running command git clone --filter=blob:none --quiet https://github.com/stepjam/PyRep.git /tmp/pip-install-akj7udrx/pyrep_482de489497949998bfe3d863ffdac43
+  Resolved https://github.com/stepjam/PyRep.git to commit 8f420be8064b1970aae18a9cfbc978dfb15747ef
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: numpy in /home/tongmiao/.local/lib/python3.8/site-packages (from rlbench==1.2.0) (1.23.5)
+Requirement already satisfied: Pillow in /home/tongmiao/.local/lib/python3.8/site-packages (from rlbench==1.2.0) (10.4.0)
+Requirement already satisfied: pyquaternion in /home/tongmiao/.local/lib/python3.8/site-packages (from rlbench==1.2.0) (0.9.9)
+Requirement already satisfied: scipy in /home/tongmiao/.local/lib/python3.8/site-packages (from rlbench==1.2.0) (1.10.1)
+Requirement already satisfied: natsort in /home/tongmiao/.local/lib/python3.8/site-packages (from rlbench==1.2.0) (8.4.0)
+Requirement already satisfied: cffi>=1.0.0 in /home/tongmiao/.local/lib/python3.8/site-packages (from pyrep@ git+https://github.com/stepjam/PyRep.git->rlbench==1.2.0) (1.17.1)
+Requirement already satisfied: pycparser in /home/tongmiao/.local/lib/python3.8/site-packages (from cffi>=1.0.0->pyrep@ git+https://github.com/stepjam/PyRep.git->rlbench==1.2.0) (2.22)
+Building wheels for collected packages: pyrep
+  Building wheel for pyrep (setup.py): started
+  Building wheel for pyrep (setup.py): finished with status 'error'
+  error: subprocess-exited-with-error
+  
+  × python setup.py bdist_wheel did not run successfully.
+  │ exit code: 1
+  ╰─> [109 lines of output]
+      /home/tongmiao/.local/lib/python3.8/site-packages/setuptools/__init__.py:94: _DeprecatedInstaller: setuptools.installer and fetch_build_eggs are deprecated.
+      !!
+      
+              ********************************************************************************
+              Requirements should be satisfied by a PEP 517 installer.
+              If you are using pip, you can try `pip install --use-pep517`.
+              ********************************************************************************
+      
+      !!
+        dist.fetch_build_eggs(dist.setup_requires)
+      copying lua file: pyrep/backend -> /home/tongmiao/CoppeliaSim
+      running bdist_wheel
+      running build
+      running build_py
+      creating build/lib.linux-x86_64-cpython-38/pyrep
+      copying pyrep/pyrep.py -> build/lib.linux-x86_64-cpython-38/pyrep
+      copying pyrep/errors.py -> build/lib.linux-x86_64-cpython-38/pyrep
+      copying pyrep/const.py -> build/lib.linux-x86_64-cpython-38/pyrep
+      copying pyrep/__init__.py -> build/lib.linux-x86_64-cpython-38/pyrep
+      creating build/lib.linux-x86_64-cpython-38/pyrep/backend
+      copying pyrep/backend/sim.py -> build/lib.linux-x86_64-cpython-38/pyrep/backend
+      copying pyrep/backend/simConst.py -> build/lib.linux-x86_64-cpython-38/pyrep/backend
+      copying pyrep/backend/utils.py -> build/lib.linux-x86_64-cpython-38/pyrep/backend
+      copying pyrep/backend/__init__.py -> build/lib.linux-x86_64-cpython-38/pyrep/backend
+      creating build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/vision_sensor.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/object.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/camera.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/octree.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/dummy.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/shape.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/cartesian_path.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/force_sensor.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/light.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/proximity_sensor.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/joint.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      copying pyrep/objects/__init__.py -> build/lib.linux-x86_64-cpython-38/pyrep/objects
+      creating build/lib.linux-x86_64-cpython-38/pyrep/sensors
+      copying pyrep/sensors/gyroscope.py -> build/lib.linux-x86_64-cpython-38/pyrep/sensors
+      copying pyrep/sensors/spherical_vision_sensor.py -> build/lib.linux-x86_64-cpython-38/pyrep/sensors
+      copying pyrep/sensors/accelerometer.py -> build/lib.linux-x86_64-cpython-38/pyrep/sensors
+      copying pyrep/sensors/__init__.py -> build/lib.linux-x86_64-cpython-38/pyrep/sensors
+      creating build/lib.linux-x86_64-cpython-38/pyrep/robots
+      copying pyrep/robots/robot_component.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots
+      copying pyrep/robots/__init__.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots
+      creating build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/dobot.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/sawyer.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/jaco.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/xarm7.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/mico.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/panda.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/baxter.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/youBot.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/ur5.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/lbr_iiwa_14_r820.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/lbr_iiwa_7_r800.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/ur10.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/__init__.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/locobot_arm.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/ur3.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      copying pyrep/robots/arms/arm.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/arms
+      creating build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/baxter_suction_cup.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/panda_gripper.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/locobot_gripper.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/gripper.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/xarm_gripper.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/mico_gripper.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/robotiq85_gripper.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/dobot_suction_cup.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/suction_cup.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/baxter_gripper.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/jaco_gripper.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      copying pyrep/robots/end_effectors/__init__.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/end_effectors
+      creating build/lib.linux-x86_64-cpython-38/pyrep/robots/mobiles
+      copying pyrep/robots/mobiles/turtlebot.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/mobiles
+      copying pyrep/robots/mobiles/youbot.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/mobiles
+      copying pyrep/robots/mobiles/mobile_base.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/mobiles
+      copying pyrep/robots/mobiles/holonomic_base.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/mobiles
+      copying pyrep/robots/mobiles/line_tracer.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/mobiles
+      copying pyrep/robots/mobiles/locobot.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/mobiles
+      copying pyrep/robots/mobiles/nonholonomic_base.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/mobiles
+      creating build/lib.linux-x86_64-cpython-38/pyrep/robots/configuration_paths
+      copying pyrep/robots/configuration_paths/arm_configuration_path.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/configuration_paths
+      copying pyrep/robots/configuration_paths/configuration_path.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/configuration_paths
+      copying pyrep/robots/configuration_paths/mobile_configuration_path.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/configuration_paths
+      copying pyrep/robots/configuration_paths/nonholonomic_configuration_path.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/configuration_paths
+      copying pyrep/robots/configuration_paths/holonomic_configuration_path.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/configuration_paths
+      copying pyrep/robots/configuration_paths/__init__.py -> build/lib.linux-x86_64-cpython-38/pyrep/robots/configuration_paths
+      creating build/lib.linux-x86_64-cpython-38/pyrep/textures
+      copying pyrep/textures/texture.py -> build/lib.linux-x86_64-cpython-38/pyrep/textures
+      copying pyrep/textures/__init__.py -> build/lib.linux-x86_64-cpython-38/pyrep/textures
+      creating build/lib.linux-x86_64-cpython-38/pyrep/misc
+      copying pyrep/misc/signals.py -> build/lib.linux-x86_64-cpython-38/pyrep/misc
+      copying pyrep/misc/distance.py -> build/lib.linux-x86_64-cpython-38/pyrep/misc
+      copying pyrep/misc/__init__.py -> build/lib.linux-x86_64-cpython-38/pyrep/misc
+      running build_ext
+      generating cffi module 'build/temp.linux-x86_64-cpython-38/pyrep.backend._sim_cffi.c'
+      creating build/temp.linux-x86_64-cpython-38
+      building 'pyrep.backend._sim_cffi' extension
+      creating build/temp.linux-x86_64-cpython-38/build/temp.linux-x86_64-cpython-38
+      /home/tongmiao/miniconda3/envs/env/bin/x86_64-conda-linux-gnu-cc -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -O2 -Wall -g -fstack-protector-strong -Wformat -Werror=format-security -g -fwrapv -O2 -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem /home/tongmiao/miniconda3/envs/env/include -DNDEBUG -D_FORTIFY_SOURCE=2 -O2 -isystem /home/tongmiao/miniconda3/envs/env/include -fPIC -I/tmp/pip-install-akj7udrx/pyrep_482de489497949998bfe3d863ffdac43/cffi_build -I/usr/include/python3.8 -c build/temp.linux-x86_64-cpython-38/pyrep.backend._sim_cffi.c -o build/temp.linux-x86_64-cpython-38/build/temp.linux-x86_64-cpython-38/pyrep.backend._sim_cffi.o
+      In file included from build/temp.linux-x86_64-cpython-38/pyrep.backend._sim_cffi.c:50:
+      /usr/include/python3.8/pyconfig.h:3:12: fatal error: x86_64-linux-gnu/python3.8/pyconfig.h: No such file or directory
+          3 | #  include <x86_64-linux-gnu/python3.8/pyconfig.h>
+            |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      compilation terminated.
+      error: command '/home/tongmiao/miniconda3/envs/env/bin/x86_64-conda-linux-gnu-cc' failed with exit code 1
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+  ERROR: Failed building wheel for pyrep
+  Running setup.py clean for pyrep
+Failed to build pyrep
+ERROR: Failed to build installable wheels for some pyproject.toml based projects (pyrep)

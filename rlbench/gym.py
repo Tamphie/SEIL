@@ -1,5 +1,5 @@
 from typing import Union
-
+import re
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
@@ -21,7 +21,7 @@ class RLBenchEnv(gym.Env):
     """An gym wrapper for RLBench."""
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, task_class, observation_mode='state',
+    def __init__(self, task_class, observation_mode='vision',
                  render_mode: Union[None, str] = None, action_mode=None):
         self.task_class = task_class
         self.observation_mode = observation_mode
@@ -44,7 +44,7 @@ class RLBenchEnv(gym.Env):
         self.rlbench_env = Environment(
             action_mode=self.action_mode,
             obs_config=self.obs_config,
-            headless=True,
+            headless=False,
         )
         self.rlbench_env.launch()
         self.rlbench_task_env = self.rlbench_env.get_task(self.task_class)
@@ -70,15 +70,30 @@ class RLBenchEnv(gym.Env):
         self.observation_space = spaces.Dict(self.observation_space)
 
         action_low, action_high = action_mode.action_bounds()
+        print(f"self.rlbench_env.action_shape:{self.rlbench_env.action_shape}")
         self.action_space = spaces.Box(
             low=np.float32(action_low), high=np.float32(action_high), shape=self.rlbench_env.action_shape, dtype=np.float32)
-
+        # if isinstance(self.action_space, spaces.Box):
+        #     print(f"🔹 Action space: {self.action_space.low} to {self.action_space.high}")
+        # else:
+        #     print("type of space action",type(self.action_space))
     def _extract_obs(self, rlbench_obs):
+        print("????Available states in rlbench_obs:", dir(rlbench_obs))
         gym_obs = {} 
-        for state_name in ["joint_velocities", "joint_positions", "joint_forces", "gripper_open", "gripper_pose", "gripper_joint_positions", "gripper_touch_forces", "task_low_dim_state"]:
+        for state_name in ["joint_velocities", "joint_positions", "joint_forces", "gripper_open", "gripper_pose", "gripper_joint_positions", "gripper_touch_forces", "task_low_dim_state", "pcd_from_mesh", "dist_data","front_point_cloud"]:
             state_data = getattr(rlbench_obs, state_name)
+            print(f"\n🔹 Processing state: {state_name}")
+            # print(f"   - Original data: {state_data}")
+            # print(f"   - Original type: {type(state_data)}")
             if state_data is not None:
-                state_data = np.float32(state_data)
+                print("state data is not none")
+                if isinstance(state_data, np.ndarray) and state_data.dtype.type is np.str_:
+                    # Convert only valid numbers, silently skip strings
+                    state_data = np.array([float(val) for val in state_data 
+                                        if re.match(r"^-?\d+(\.\d+)?(e-?\d+)?$", val)], dtype=np.float32)
+                else:
+                    state_data = np.float32(state_data)  # Convert normally if already numeric
+                
                 if np.isscalar(state_data):
                     state_data = np.asarray([state_data])
                 gym_obs[state_name] = state_data

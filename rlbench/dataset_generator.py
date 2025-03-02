@@ -176,11 +176,11 @@ def save_demo_IL(demo, example_path):
     dist_data_path = os.path.join(
         example_path, 'dist_data')
     
-    check_and_make(right_shoulder_rgb_path)
-    check_and_make(right_shoulder_depth_path)
+    # check_and_make(right_shoulder_rgb_path)
+    # check_and_make(right_shoulder_depth_path)
     check_and_make(front_rgb_path)
     check_and_make(front_depth_path)
-    check_and_make(front_mask_path)
+    # check_and_make(front_mask_path)
     check_and_make(front_point_cloud_path)
     check_and_make(pcd_from_mesh_path) 
     
@@ -213,21 +213,21 @@ def save_demo_IL(demo, example_path):
 
         front_point_cloud = np.array(obs.front_point_cloud)
         
-        right_shoulder_rgb.save(
-            os.path.join(right_shoulder_rgb_path, IMAGE_FORMAT % i))
-        right_shoulder_depth.save(
-            os.path.join(right_shoulder_depth_path, IMAGE_FORMAT % i))
+        # right_shoulder_rgb.save(
+        #     os.path.join(right_shoulder_rgb_path, IMAGE_FORMAT % i))
+        # right_shoulder_depth.save(
+        #     os.path.join(right_shoulder_depth_path, IMAGE_FORMAT % i))
         
         front_rgb.save(
             os.path.join(front_rgb_path, IMAGE_FORMAT % i))
         front_depth.save(
             os.path.join(front_depth_path, IMAGE_FORMAT % i))
-        front_mask.save(
-            os.path.join(front_mask_path, IMAGE_FORMAT % i))
+        # front_mask.save(
+        #     os.path.join(front_mask_path, IMAGE_FORMAT % i))
 
         np.save(
             os.path.join(front_point_cloud_path, PCD_FORMAT % i), front_point_cloud)
-        # print(front_point_cloud.shape)
+        print(front_point_cloud.shape)
 
         if obs.pcd_from_mesh is not None:
             np.save(os.path.join(pcd_from_mesh_path, PCD_FORMAT % i), obs.pcd_from_mesh)

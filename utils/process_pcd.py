@@ -15,7 +15,7 @@ class PointCloudBase:
     Base class for point cloud operations.
     Provides shared methods for visualization and processing.
     """
-    def __init__(self, pcd_dir: str, step: int = 0):
+    def __init__(self, pcd_dir: str, step: int = 0, label: bool = False):
         """
         Initialize the base class with a list of point cloud files.
 
@@ -23,11 +23,12 @@ class PointCloudBase:
         :param step: Initial step to load point cloud data.
         """
         self.pcd_dir = pcd_dir
+        self.label = label
         self.step = step
         self.points = self._load_pcd(step)
-        self.points = self.points.reshape(-1, 3)
         self.pcd = o3d.geometry.PointCloud()
-        self.pcd.points = o3d.utility.Vector3dVector(self.points)
+        if not label:
+            self.pcd.points = o3d.utility.Vector3dVector(self.points)
 
     def visualize_pcd(self):
         """
@@ -35,7 +36,17 @@ class PointCloudBase:
 
         :param pcd: Point cloud to visualize.
         """
-        o3d.visualization.draw_geometries([self.pcd])
+        if not self.label:
+            o3d.visualization.draw_geometries([self.pcd])
+        else:
+            points = self.points[:, :3] 
+            labels = self.points[:, 3]
+            self.pcd.points = o3d.utility.Vector3dVector(points)
+            colors = np.zeros((points.shape[0], 3))  # Default color (black)
+            colors[labels == 1] = [1, 0, 0]  # Red for closest point
+            colors[labels == 0] = [0, 0, 1]  # Blue for other points
+            self.pcd.colors = o3d.utility.Vector3dVector(colors)
+            o3d.visualization.draw_geometries([self.pcd])
 
     def _load_pcd(self, step: int) -> np.ndarray:
         """
@@ -59,19 +70,28 @@ class PointCloudBase:
         """
         vis = o3d.visualization.Visualizer()
         vis.create_window()
-
-        # Add the initial geometry
-        vis.add_geometry(self.pcd)
+        self.pcd = o3d.geometry.PointCloud()
         filenames = sorted(os.listdir(self.pcd_dir), key=lambda x: int(x.replace('.npy', '')))
 
         try:
             for filename in filenames:
                 step = int(filename.replace('.npy',' '))
                 print(f"Step is {step}")
-                points = self._load_pcd(step)
-                self.pcd.points = o3d.utility.Vector3dVector(points)
+                data = self._load_pcd(step)
+                if self.label :
+                    points = data[:, :3] 
+                    labels = data[:, 3]
+                    self.pcd.points = o3d.utility.Vector3dVector(points)
+                    colors = np.zeros((points.shape[0], 3))  # Default color (black)
+                    colors[labels == 1] = [1, 0, 0]  # Red for closest point
+                    colors[labels == 0] = [0, 0, 1]  # Blue for other points
+
+                    self.pcd.colors = o3d.utility.Vector3dVector(colors)
+                else:
+                    self.pcd.points = o3d.utility.Vector3dVector(data)
 
                 # Update the visualization
+                vis.add_geometry(self.pcd)
                 vis.update_geometry(self.pcd)
                 vis.poll_events()
                 vis.update_renderer()
@@ -267,18 +287,18 @@ class PointCloudFromModel(PointCloudBase):
     """
     Class for processing point cloud data obtained from object models.
     """
-    def __init__(self, pcd_dir: str, step: int = 0):
+    def __init__(self, pcd_dir: str, step: int = 0, label:bool = False):
         """
         Initialize the model point cloud class with task data for poses.
 
         :param pcd_files: List of file paths to point cloud data.
         :param task_data_path: Path to the task data file containing pose information.
         """
-        super().__init__(pcd_dir, step)
+        super().__init__(pcd_dir, step, label)
         self.step = step
-        base_dir = os.path.dirname(pcd_dir)
-        self.task_data_path = os.path.join(base_dir, 'task_data.npy')
-        self.dist_data_path = os.path.join(base_dir, 'dist_data.npy')
+        self.base_dir = os.path.dirname(pcd_dir)
+        self.task_data_path = os.path.join(self.base_dir, 'task_data.npy')
+        self.dist_data_path = os.path.join(self.base_dir, 'dist_data.npy')
     
 
     def extract_poses(self, change: bool = False) -> List[np.ndarray]:
@@ -352,16 +372,16 @@ class PointCloudFromModel(PointCloudBase):
         plt.legend()
         plt.show()
 
-    def extract_contact_point(self):
+    def extract_contact_point(self,save_label = None):
         dist_data = np.load(self.dist_data_path)
-        min_distance_index = np.argmin(dist_data[:, -1])
-        reference_point = dist_data[min_distance_index, :3]  # Extract first 3 elements
-        point_data = np.array(dist_data[:,:3])
-        combined_points = np.vstack((self.points, point_data))
-        combined_pcd = o3d.geometry.PointCloud()
-        combined_pcd.points = o3d.utility.Vector3dVector(combined_points)
-        o3d.visualization.draw_geometries([combined_pcd])
-        print(f"min_dist:{min_distance_index},dist: {dist_data[min_distance_index, -1] } point: {reference_point}")
+        # min_distance_index = np.argmin(dist_data[:, -1])
+        # reference_point = dist_data[min_distance_index, :3]  # Extract first 3 elements
+        # point_data = np.array(dist_data[:,:3])
+        # combined_points = np.vstack((self.points, point_data))
+        # combined_pcd = o3d.geometry.PointCloud()
+        # combined_pcd.points = o3d.utility.Vector3dVector(combined_points)
+        # o3d.visualization.draw_geometries([combined_pcd])
+        # print(f"min_dist:{min_distance_index},dist: {dist_data[min_distance_index, -1] } point: {reference_point}")
 
         # Initialize output
         results = []
@@ -370,14 +390,26 @@ class PointCloudFromModel(PointCloudBase):
         for step in range(len(dist_data)):  # Assuming one step per pcd_from_mesh file
             # Load pcd_from_mesh for the current step
             points = self._load_pcd(step)
-
+            reference_point = dist_data[step, :3]
             # Check if the reference point exists in the current point cloud
-            match_indices = np.where(np.all(np.isclose(points, reference_point, atol=tolerance), axis=1))[0]
-            if match_indices.size > 0:
-                results.append((step, match_indices.tolist()))  # Store step index and point index
-            else:
-                results.append((step, None))  # No match found
+            distances = np.linalg.norm(points - reference_point, axis=1)  
+            min_index = np.argmin(distances)  
+            labels = np.zeros((points.shape[0], 1), dtype=int)
+            labels[min_index] = 1  # Mark the closest point
 
+            # Concatenate the points and labels to form an (N, 4) array
+            points_with_labels = np.hstack((points, labels))
+            closest_point = points[min_index]
+            # match_indices = np.where(np.all(np.isclose(points, reference_point, atol=tolerance), axis=1))[0]
+            # if min_index > 0:
+            results.append((step, min_index))  # Store step index and point index
+            # else:
+            #     results.append((step, None))  # No match found
+            if save_label:
+                output_dir = os.path.join(self.base_dir, "pcd_with_labels")
+                os.makedirs(output_dir, exist_ok=True)
+                output_file = os.path.join(output_dir, f"{step}.npy")
+                np.save(output_file, points_with_labels)
         # Output results
         for step, result in results:
             print(f"Step {step}: Point Index in PCD = {result}")
@@ -393,7 +425,7 @@ class PointCloudFromModel(PointCloudBase):
 if __name__ == "__main__":
 
     pcd1 = PointCloudFromModel(
-        pcd_dir = "data/open_door/episode_0/pcd_from_mesh", 
-        step=179)
+        pcd_dir = "data/open_door/episode_0/pcd_with_labels", 
+        step=1, label = True)
     
-    pcd1.extract_contact_point()
+    pcd1.visualize_pcd()

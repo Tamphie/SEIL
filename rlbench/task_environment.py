@@ -1,5 +1,5 @@
 import logging
-from typing import List, Callable
+from typing import List, Callable, Tuple
 
 import numpy as np
 from pyrep import PyRep
@@ -90,30 +90,31 @@ class TaskEnvironment(object):
         return desc, self._scene.get_observation()
 
     def get_observation(self) -> Observation:
+        print("1 step get obs successfully")
         return self._scene.get_observation()
 
-    # def step(self, action) -> (Observation, int, bool):
-    #     # returns observation, reward, done, info
-    #     if not self._reset_called:
-    #         raise RuntimeError(
-    #             "Call 'reset' before calling 'step' on a task.")
-    #     self._action_mode.action(self._scene, action)
-    #     success, terminate = self._task.success()
-    #     reward = float(success)
-    #     if self._shaped_rewards:
-    #         reward = self._task.reward()
-    #         if reward is None:
-    #             raise RuntimeError(
-    #                 'User requested shaped rewards, but task %s does not have '
-    #                 'a defined reward() function.' % self._task.get_name())
-    #     return self._scene.get_observation(), reward, terminate
-
-    def step(self, action) -> None:
+    def step(self, action) -> Tuple[Observation, int, bool]:
         # returns observation, reward, done, info
         if not self._reset_called:
             raise RuntimeError(
                 "Call 'reset' before calling 'step' on a task.")
         self._action_mode.action(self._scene, action)
+        success, terminate = self._task.success()
+        reward = float(success)
+        if self._shaped_rewards:
+            reward = self._task.reward()
+            if reward is None:
+                raise RuntimeError(
+                    'User requested shaped rewards, but task %s does not have '
+                    'a defined reward() function.' % self._task.get_name())
+        return self._scene.get_observation(), reward, terminate
+
+    # def step(self, action) -> None:
+    #     # returns observation, reward, done, info
+    #     if not self._reset_called:
+    #         raise RuntimeError(
+    #             "Call 'reset' before calling 'step' on a task.")
+    #     self._action_mode.action(self._scene, action)
         
 
     def get_demos(self, amount: int, live_demos: bool = False,

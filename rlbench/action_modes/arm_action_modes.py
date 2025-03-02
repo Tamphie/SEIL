@@ -314,14 +314,31 @@ class EndEffectorPoseViaIK(ArmActionMode):
 
     def action(self, scene: Scene, action: np.ndarray):
         assert_action_shape(action, (7,))
+        quat = action[3:]
+        norm = np.linalg.norm(quat)
+        if norm < 1e-6:  # Avoid division by zero & invalid quaternions
+            print("Warning: Quaternion norm too small! Replacing with default [1, 0, 0, 0].")
+            action[3:] = np.array([1, 0, 0, 0])  # Default unit quaternion
+        else:
+            action[3:] = quat / norm  # Normalize
+            print("Warning: Quaternion Normalizing.")
         assert_unit_quaternion(action[3:])
         if not self._absolute_mode and self._frame != RelativeFrame.EE:
             action = calculate_delta_pose(scene.robot, action)
         relative_to = None if self._frame == RelativeFrame.WORLD else scene.robot.arm.get_tip()
 
         try:
+            print(f"position:{action[:3]}, quaternion:{action[3:]}")
             joint_positions = scene.robot.arm.solve_ik_via_sampling(
                 action[:3], quaternion=action[3:], relative_to=relative_to)
+            if joint_positions.shape == (1, 7):  # If batch dimension exists
+                joint_positions = joint_positions.squeeze(0)  # Convert to (7,)
+            if joint_positions is None:
+                raise IKError('IK failed')
+            else:
+                print(f"joint_positions:{joint_positions}")
+                print("joint postions shape:", joint_positions.shape)
+            
             scene.robot.arm.set_joint_target_positions(joint_positions)
         except IKError as e:
             raise InvalidActionError(

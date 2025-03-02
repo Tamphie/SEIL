@@ -2,9 +2,12 @@
 Set up
 ```bash
 # In terminal 1
-pip install --user virtualenv
-virtualenv SEIL
-source ENV/bin/activate
+# pip install --user virtualenv
+# virtualenv SEIL
+# source ENV/bin/activate
+# conda activate env
+cd SEIL
+ . venv/bin/activate
 pip install --upgrade pip setuptools
 
 
@@ -12,8 +15,9 @@ export COPPELIASIM_ROOT=${HOME}/CoppeliaSim
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$COPPELIASIM_ROOT
 export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT
 
-wget --no-check-certificate https://downloads.coppeliaroboticsUbuntu20_04.tar.xz
-mkdir -p $COPPELIASIM_ROOT && tar -xf CoppeliaSim_Edu_V4_1_0_UOOT --strip-components 1
+wget --no-check-certificate https://downloads.coppeliarobotics.com/V4_1_0/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04.tar.xz
+
+mkdir -p $COPPELIASIM_ROOT && tar -xf CoppeliaSim_Edu_V4_1_0_Ubuntu20_04.tar.xz -C $COPPELIASIM_ROOT --strip-components 1
 rm -rf CoppeliaSim_Edu_V4_1_0_Ubuntu20_04.tar.xz
 
 pip install git+https://github.com/stepjam/RLBench.git

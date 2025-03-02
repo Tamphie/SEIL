@@ -369,7 +369,6 @@ class Scene(object):
             
            
             )
-            
         obs = self.task.decorate_observation(obs)
         return obs
 
