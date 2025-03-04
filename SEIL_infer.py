@@ -108,7 +108,7 @@ class SEILinference(PolicyInferenceAPI):
         return qpos, rgb_images
         
 
-    def _run(self, qpos, rgb_images, t, all_time_actions=None):
+    def _run(self, qpos, rgb_images, t, all_time_actions=None, contact=None):
         """
         Predicts and executes actions based on collected data (qpos and images).
 
@@ -123,7 +123,7 @@ class SEILinference(PolicyInferenceAPI):
         """
         curr_image = rgb_images
 
-        action = self._query_policy(t, qpos, curr_image, all_time_actions)
+        action, contact = self._query_policy(t, qpos, curr_image, all_time_actions, contact)
         action = action.squeeze(0).cpu().numpy()  # No need to detach here
         
         if self.config["predict_value"] == "ee_pos_ori":
@@ -226,6 +226,9 @@ def parse_arguments():
     )
     # For ACT
     parser.add_argument("--kl_weight", type=float, default=10.0, help="KL Weight")
+    parser.add_argument(
+        "--contact_weight", type=float, default=1.0, help="Contact loss weight"
+    )
     parser.add_argument(
         "--chunk_size", type=int, default=100, help="Number of queries (chunk size)"
     )

@@ -384,6 +384,7 @@ class PointCloudFromModel(PointCloudBase):
         # print(f"min_dist:{min_distance_index},dist: {dist_data[min_distance_index, -1] } point: {reference_point}")
 
         # Initialize output
+        contact_labels = np.zeros((len(dist_data), 10000), dtype=int)
         results = []
         tolerance = 1e-4
         # Iterate through steps to compare with the consistent reference point
@@ -396,7 +397,7 @@ class PointCloudFromModel(PointCloudBase):
             min_index = np.argmin(distances)  
             labels = np.zeros((points.shape[0], 1), dtype=int)
             labels[min_index] = 1  # Mark the closest point
-
+            contact_labels[step, min_index] = 1
             # Concatenate the points and labels to form an (N, 4) array
             points_with_labels = np.hstack((points, labels))
             closest_point = points[min_index]
@@ -413,7 +414,14 @@ class PointCloudFromModel(PointCloudBase):
         # Output results
         for step, result in results:
             print(f"Step {step}: Point Index in PCD = {result}")
-    
+        contact_label_file = os.path.join(self.base_dir, "contact_label.npy")
+        np.save(contact_label_file, contact_labels)
+
+        #validation of each step
+        # for step, result in enumerate(contact_labels):
+        #     contact_points_count = np.sum(result)  # Count the number of contact points in this step
+        #     print(f"Step {step}: Number of contact points = {contact_points_count}")
+        
     def print_dist(self):
         dist_data = np.load(self.dist_data_path)
         for step in range(len(dist_data)): 
@@ -424,8 +432,38 @@ class PointCloudFromModel(PointCloudBase):
 
 if __name__ == "__main__":
 
-    pcd1 = PointCloudFromModel(
-        pcd_dir = "data/open_door/episode_0/pcd_with_labels", 
-        step=1, label = True)
+    # pcd1 = PointCloudFromModel(
+    #     pcd_dir = "data/open_door/episode_0/pcd_with_labels", 
+    #     step=1, label = True)
     
-    pcd1.visualize_pcd()
+    # pcd1.visualize_pcd()
+
+    # pcd1 = PointCloudFromModel(
+    #     pcd_dir = "data/open_door/episode_0/pcd_from_mesh", 
+    #     step=1, label = True)
+    
+    # pcd1.extract_contact_point()
+    base_dir = "data/open_door"
+
+    # Get a list of all episodes (assuming episodes are named 'episode_0', 'episode_1', etc.)
+    # Here we assume episodes are stored as directories like "episode_0", "episode_1", ...
+    episode_dirs = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d)) and d.startswith('episode')]
+
+    # Loop through all the episode directories
+    for episode_dir in episode_dirs:
+        print(f"Processing {episode_dir}...")
+
+        # Set the pcd_dir path for the current episode
+        pcd_dir = os.path.join(base_dir, episode_dir, "pcd_from_mesh")
+
+        # Initialize the PointCloudFromModel instance for the current episode
+        pcd = PointCloudFromModel(
+            pcd_dir=pcd_dir,
+            step=1,  # Assuming step = 1 for the example, you can adjust as needed
+            label=True
+        )
+        
+        # Extract contact points for the current episode
+        pcd.extract_contact_point(save_label=True)
+
+    print("All episodes processed.")
