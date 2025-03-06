@@ -34,9 +34,10 @@ class SEILinference(PolicyInferenceAPI):
             self.env = Environment(
                 action_mode=MoveArmThenGripper(
                 #action_shape 7; 1
-                arm_action_mode=EndEffectorPoseViaIK(), gripper_action_mode=Discrete()),
+                arm_action_mode=EndEffectorPoseViaPlanning(), gripper_action_mode=Discrete()),
                 obs_config=obs_config,
                 headless=False)
+            print("EndEffectorPoseViaPlanning")
         else:
             self.env = Environment(
                 action_mode=MoveArmThenGripper(
@@ -58,6 +59,37 @@ class SEILinference(PolicyInferenceAPI):
             print(f"reset successfully")
         else:
             obs = self.task_env.get_observation()
+
+        task_data = np.array(obs.task_low_dim_state)
+        object_name = 'door_main_visible'
+        door_pose = None
+
+        # Convert the entire row to a Python list
+        task_data_list = task_data.tolist()
+
+        try:
+            # Find the index of the door object name
+            idx = task_data_list.index(object_name)
+
+            # Extract the 7 elements right before the object name
+            # [position_x, position_y, position_z, quat_x, quat_y, quat_z, quat_w]
+            current_pose = task_data_list[idx - 7 : idx]
+
+            # The first 3 are the position; the last 4 are the quaternion
+            position = np.array(current_pose[:3], dtype=np.float64)
+            quaternion = np.array(current_pose[3:], dtype=np.float64)
+            door_pose = np.concatenate([position,quaternion])
+            door_pose = np.array(door_pose)
+            door_pose = torch.from_numpy(door_pose).float().cuda().unsqueeze(0)
+            # print(f"Door pose {door_pose} at timestep {t}'s shape:{door_pose.shape}")
+
+        except ValueError:
+            # If 'door_main_visible' is not found, we just skip it
+            print(f"Object '{object_name}' not found in the current observation. Skipping...")
+
+        pcd_from_mesh = np.array(obs.pcd_from_mesh)
+        # print(f"Shape of pcd_from_mesh at timestep {t} during inference : {pcd_from_mesh.shape}")
+
         if self.config["predict_value"] == "joint_states":
             gripper_open = np.array(obs.gripper_open).reshape(1)
             joint_positions = np.array(obs.joint_positions)
@@ -105,10 +137,22 @@ class SEILinference(PolicyInferenceAPI):
             rgb_images = pcd
             # rgb_images.append(pcd)
 
-        return qpos, rgb_images
+        return qpos, rgb_images, door_pose, pcd_from_mesh
         
-
-    def _run(self, qpos, rgb_images, t, all_time_actions=None, contact=None):
+    def quaternion_to_matrix(self, quat):
+        """
+        Convert quaternion [x, y, z, w] into a 3x3 rotation matrix.
+        
+        :param quat: Array-like, shape (4,), with quaternion in [x, y, z, w] format.
+        :return: A 3x3 numpy array (rotation matrix).
+        """
+        # Create a Rotation object from the quaternion
+        r = R.from_quat(quat)  # [x, y, z, w]
+        # Convert to a 3x3 rotation matrix
+        rot_matrix = r.as_matrix()
+        return rot_matrix
+    
+    def _run(self, qpos, rgb_images, t, all_time_actions=None,door_pose=None,pcd_from_mesh=None):
         """
         Predicts and executes actions based on collected data (qpos and images).
 
@@ -117,26 +161,44 @@ class SEILinference(PolicyInferenceAPI):
             rgb_images (list): A list of RGB images.
             max_timesteps (int): Maximum number of timesteps to run the simulation.
             all_time_actions (torch.Tensor, optional): Stores actions for temporal aggregation.
-
+            door_pose (torch.Tensor): Shape (1, 7) => [x, y, z, q_x, q_y, q_z, q_w]
+            pcd_from_mesh (torch.Tensor or np.ndarray): Shape (num_points, 3), in world coords
         Returns:
             None
         """
         curr_image = rgb_images
+        # pre_contact : shape [1,1,10000]
+        action, pred_contact = self._query_policy(t, qpos, curr_image, all_time_actions)
 
-        action, contact = self._query_policy(t, qpos, curr_image, all_time_actions, contact)
-        action = action.squeeze(0).cpu().numpy()  # No need to detach here
-        
         if self.config["predict_value"] == "ee_pos_ori":
-            action = self.action_process(action)
-            #TODO determin if action satisfy:  
-            # def act(self, obs):
-            # arm = np.random.normal(0.0, 0.1, size=(self.action_shape[0] - 1,))
-            # gripper = [1.0]  # Always open
-            # return np.concatenate([arm, gripper], axis=-1)
 
-            # obs, reward, terminate = self.task_env.step(action)
-            self.task_env.step(action)
-            # self.test_by_dummy(action, t)
+            pred_contact = pred_contact.squeeze().detach().cpu().numpy()  # shape [10000]
+            contact_idx = np.argmax(pred_contact)
+            contact_point_position = pcd_from_mesh[contact_idx]
+
+            door_pose_np = door_pose.squeeze(0).detach().cpu().numpy()  # shape (7,)
+            door_quat = door_pose_np[3:]            # (q_x, q_y, q_z, q_w)
+            R_door = self.quaternion_to_matrix(door_quat)
+            
+            action = action.squeeze(0).cpu().numpy()  # No need to detach here
+            action_position = action[:3]
+            action_6d = action[3:9]
+            predicted_gripper = np.array(action[-1])
+
+            action_world_pos = (contact_point_position + R_door.dot(action_position))
+
+            action_world_rot = R_door.dot(action_6d.reshape(3, 2))
+            action_world_rot = action_world_rot.T.reshape(-1)
+            action_world_quat = self.rotation_6d_to_quaternion(action_world_rot)
+            norm = np.linalg.norm(action_world_quat)
+            if norm == 0:
+                raise ValueError("The quaternion has zero magnitude and cannot be normalized.")
+            action_world_quat = action_world_quat / norm
+            action_world = np.concatenate([action_world_pos, action_world_quat,[predicted_gripper]], axis=-1)
+            # action_world = torch.from_numpy(action_world).float().cuda().unsqueeze(0)
+            # action_world = action_world.detach().cpu().numpy()
+            # self.task_env.step(action_world)
+            self.test_by_dummy(action_world, t)
 
         else:
             self.task_env.step(action)
@@ -272,6 +334,7 @@ def main():
         "lr": args["lr"],  # Learning rate for evaluation
         "num_queries": args["chunk_size"],
         "kl_weight": args["kl_weight"],
+        "contact_weight": args["contact_weight"],
         "hidden_dim": args["hidden_dim"],
         "dim_feedforward": args["dim_feedforward"],
         "lr_backbone": 1e-5,  # As per the correct code

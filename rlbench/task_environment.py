@@ -90,7 +90,6 @@ class TaskEnvironment(object):
         return desc, self._scene.get_observation()
 
     def get_observation(self) -> Observation:
-        print("1 step get obs successfully")
         return self._scene.get_observation()
 
     def step(self, action) -> Tuple[Observation, int, bool]:

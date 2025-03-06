@@ -5,7 +5,7 @@ task_name="open_door"
 policy_class="ACT"  # ["ACT", "Diffusion"]
 visual_encoder="resnet18"  # ["dinov2", "resnet18"]
 variant="vits14"  # ["vits14", "vitb14", "vitl14", "vitg14"]
-predict_value="joint_states" # ["joint_states", "ee_pos_ori"]
+predict_value="ee_pos_ori" # ["joint_states", "ee_pos_ori"]
 obs_type="rgbd"
 # Conditional chunk_size setting
 if [ "$policy_class" == "ACT" ]; then

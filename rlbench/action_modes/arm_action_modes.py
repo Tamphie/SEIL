@@ -326,7 +326,7 @@ class EndEffectorPoseViaIK(ArmActionMode):
         if not self._absolute_mode and self._frame != RelativeFrame.EE:
             action = calculate_delta_pose(scene.robot, action)
         relative_to = None if self._frame == RelativeFrame.WORLD else scene.robot.arm.get_tip()
-
+        print(f"relative_to:{relative_to}")
         try:
             print(f"position:{action[:3]}, quaternion:{action[3:]}")
             joint_positions = scene.robot.arm.solve_ik_via_sampling(

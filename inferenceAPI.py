@@ -25,6 +25,7 @@ class PolicyInferenceAPI:
         """
         self.config = config
         self.all_actions = None  # Initialize all_actions
+        self.pred_contact = None  # Initialize pred_contact
         self._set_up()
 
     def _set_up(self):
@@ -99,8 +100,7 @@ class PolicyInferenceAPI:
         """Queries the policy to get the next action."""
         if self.config["policy_class"] == "ACT":
             if t % self.query_frequency == 0:
-                self.all_actions = self.policy(qpos, curr_image)
-
+                self.all_actions, self.pred_contact = self.policy(qpos, curr_image)
             if self.temporal_agg:
                 if self.all_actions is None:
                     raise ValueError(
@@ -128,7 +128,7 @@ class PolicyInferenceAPI:
             # For CNNMLP or Diffusion, temporal aggregation is ignored
             raw_action = self.policy(qpos, curr_image)
 
-        return raw_action
+        return raw_action, self.pred_contact
     
    
         
@@ -230,7 +230,7 @@ class PolicyInferenceAPI:
             print(f"temporal_agg is {self.temporal_agg}")
             for t in range(max_timesteps):
                 time.sleep(0.01)
-                qpos, rgb_images = self._get_data(t)
+                qpos, rgb_images, door_pose, pcd_from_mesh = self._get_data(t)
                 # self.test_by_collect(t)
                 # Run the collected data through the policy
                 self._run(
@@ -238,6 +238,8 @@ class PolicyInferenceAPI:
                     rgb_images,
                     t,
                     all_time_actions if temporal_agg else None,
+                    door_pose, pcd_from_mesh
+
                 )
 
         print(f"Inference took {time.time() - start_time:.2f} seconds")
