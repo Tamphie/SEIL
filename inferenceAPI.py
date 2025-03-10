@@ -128,7 +128,7 @@ class PolicyInferenceAPI:
             # For CNNMLP or Diffusion, temporal aggregation is ignored
             raw_action = self.policy(qpos, curr_image)
 
-        return raw_action, self.pred_contact
+        return raw_action, self.pred_contact, self.all_actions
     
    
         

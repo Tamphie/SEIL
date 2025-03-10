@@ -14,7 +14,6 @@ from rlbench.backend import utils
 # import numpy as np
 from inferenceAPI import PolicyInferenceAPI
 from scipy.spatial.transform import Rotation as R
-
 class SEILinference(PolicyInferenceAPI):
 
     def __init__(self,config):
@@ -168,7 +167,7 @@ class SEILinference(PolicyInferenceAPI):
         """
         curr_image = rgb_images
         # pre_contact : shape [1,1,10000]
-        action, pred_contact = self._query_policy(t, qpos, curr_image, all_time_actions)
+        action, pred_contact, actions = self._query_policy(t, qpos, curr_image, all_time_actions)
 
         if self.config["predict_value"] == "ee_pos_ori":
 
@@ -178,6 +177,8 @@ class SEILinference(PolicyInferenceAPI):
 
             door_pose_np = door_pose.squeeze(0).detach().cpu().numpy()  # shape (7,)
             door_quat = door_pose_np[3:]            # (q_x, q_y, q_z, q_w)
+            if t % 5 ==0:
+                self.visualize_step(t, actions, door_quat, contact_point_position)
             R_door = self.quaternion_to_matrix(door_quat)
             
             action = action.squeeze(0).cpu().numpy()  # No need to detach here
@@ -198,7 +199,7 @@ class SEILinference(PolicyInferenceAPI):
             # action_world = torch.from_numpy(action_world).float().cuda().unsqueeze(0)
             # action_world = action_world.detach().cpu().numpy()
             # self.task_env.step(action_world)
-            self.test_by_dummy(action_world, t)
+            # self.test_by_dummy(action_world, t)
 
         else:
             self.task_env.step(action)
@@ -214,7 +215,7 @@ class SEILinference(PolicyInferenceAPI):
     def test_by_dummy(self,action,t):
         from pyrep.objects.dummy import Dummy
         # from pyrep import PyRep
-        if t == 0: 
+        if t == 0 : 
             predicted_target = Dummy.create(size=0.05)
             predicted_target.set_name('Predicted_EEF_Target')
         else :
@@ -223,7 +224,44 @@ class SEILinference(PolicyInferenceAPI):
         predicted_target.set_quaternion(action[3:-1])
         self.task_env._pyrep.step()
         print(f"{t} dummy action is {action}")
-    
+
+    def visualize_step(self, t, actions, r_door, contact_position):
+        from pyrep.objects.dummy import Dummy
+        from pyrep import PyRep
+        # Create or update the reference frame
+        if t == 0:
+            pr = PyRep()
+            ref_frame = Dummy.create(size=0.05)
+            ref_frame.set_name(f"Reference_Frame_{t}")
+        else:
+            ref_frame = Dummy(f"Reference_Frame_{t-5}")
+            ref_frame.set_name(f"Reference_Frame_{t}")
+        
+        ref_frame.set_position(contact_position)
+        ref_frame.set_quaternion(r_door)
+        # ref_frame.set_visibility(False)
+        actions = actions.squeeze(0).detach().cpu().numpy()
+        print(f"actions shape is {actions.shape}")
+
+        for i, action in enumerate(actions[:5]):
+            print(f"Action shape is {action.shape}")
+            quat = self.rotation_6d_to_quaternion(action[3:9])
+
+            if t == 0 :
+                # predicted_target = Dummy.create(size=0.05)
+                predicted_target = pr.import_model("../CoppeliaSim/models/other/reference frame.ttm")
+
+                predicted_target.set_name(f"Predicted_EEF_Target_{i}")
+            else:
+                predicted_target = Dummy(f"Predicted_EEF_Target_{i}")
+            
+            # Set position and quaternion relative to the reference frame
+            predicted_target.set_position(action[:3], relative_to=ref_frame)
+            predicted_target.set_quaternion(quat, relative_to=ref_frame)
+
+        self.task_env._pyrep.step()
+        print(f"Visualized step {t} with {len(actions)} sequential actions relative to ref_frame.")
+
 
     def quaternion_to_6d(self, q):
         # Convert quaternion to rotation matrix
