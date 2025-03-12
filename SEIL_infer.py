@@ -129,11 +129,11 @@ class SEILinference(PolicyInferenceAPI):
             # rgb_images.append(curr_image)
         
         elif self.config["obs_type"] == "pcd":
-            front_point_cloud = np.array(obs.front_point_cloud)
-            pcd = torch.from_numpy(front_point_cloud).float()
-            pcd = pcd.permute(2, 0, 1)
-            pcd = pcd.unsqueeze(0)
-            rgb_images = pcd
+            pcd_from_mesh = np.array(obs.pcd_from_mesh)
+            pcd = torch.from_numpy(pcd_from_mesh).float()
+            # pcd = pcd.permute(2, 0, 1)
+            # pcd = pcd.unsqueeze(0)
+            rgb_images = pcd # [10000,3]
             # rgb_images.append(pcd)
 
         return qpos, rgb_images, door_pose, pcd_from_mesh

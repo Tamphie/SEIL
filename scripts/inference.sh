@@ -31,3 +31,4 @@ python SEIL_infer.py \
     --predict_value ${predict_value} \
     --obs_type ${obs_type} \
     --episode_len ${episode_length}  \
+    --chunk_size 10

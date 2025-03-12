@@ -216,7 +216,7 @@ class PolicyInferenceAPI:
             self.temporal_agg if self.config["policy_class"] == "ACT" else False
         )
         num_queries = self.num_queries if temporal_agg else None
-
+        print(f"num_queries is {num_queries}")
         start_time = time.time()
 
         self.env.seed(0)

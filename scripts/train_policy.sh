@@ -3,13 +3,13 @@
 # Set variables
 task_name="open_door"
 policy_class="ACT"  # ["ACT", "Diffusion"]
-visual_encoder="resnet18"  # ["dinov2", "resnet18"]
+visual_encoder="pointnet"  # ["dinov2", "resnet18", "pointnet"
 variant="vits14"  # ["vits14", "vitb14", "vitl14", "vitg14"]
 predict_value="ee_pos_ori" # ["joint_states", "ee_pos_ori"]
-obs_type="rgbd"
+obs_type="pcd" # ["rgbd", "pcd"] 
 # Conditional chunk_size setting
 if [ "$policy_class" == "ACT" ]; then
-    chunk_size=100
+    chunk_size=10
 elif [ "$policy_class" == "Diffusion" ]; then
     chunk_size=16
 else
