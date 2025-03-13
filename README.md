@@ -79,3 +79,12 @@ To read npy data:
 echo "import numpy as np; data = np.load('data/open_door/episode_0/task_data.npy');print(data[0])" > print_first_line.py
 python3 print_first_line.py
 ```
+To obtain contact_label and door pose:
+```bash
+python utils/process_pcd.py
+```
+To validate traning data in object-centric:
+```bash
+python utils/validate_training_data_in_obc.py
+python utils/validate_training_data.py
+```

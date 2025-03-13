@@ -57,7 +57,7 @@ def get_contact_point_position(demo_dir, step_idx, contact_label):
     if len(contact_indices) == 0:
         raise ValueError(f"No contact found at step {step_idx} in episode 0!")
     min_index = contact_indices[0]
-    points = np.load(f"{demo_dir}/episode_0/pcd_from_mesh/{step_idx}.npy")
+    points = np.load(f"{demo_dir}/episode_30/pcd_from_mesh/{step_idx}.npy")
     contact_point = points[min_index]
     return contact_point
 
@@ -85,13 +85,13 @@ def transform_pose_to_local(global_pose, contact_point, door_quat):
     # If you have a gripper dimension after the 9th element:
     if global_pose.shape[0] > 9:
         gripper_val = global_pose[9:]
-        print("Gripper value detected!")
+        # print("Gripper value detected!")
         return np.concatenate([local_pos, local_rot6d, gripper_val], axis=0)
     else:
         return np.concatenate([local_pos, local_rot6d], axis=0)
             
-def get_door_frame_poses(demo_dir, file_idx):
-    task_data = np.load(f"{demo_dir}/episode_{file_idx}/task_data.npy", allow_pickle=True)
+def get_door_frame_poses(demo_dir):
+    task_data = np.load(f"{demo_dir}/episode_30/task_data.npy", allow_pickle=True)
     door_poses = []
     for i, row in enumerate(task_data):
         row_list = row.tolist()
@@ -108,9 +108,9 @@ def get_door_frame_poses(demo_dir, file_idx):
     return door_poses
 
 def process_episode(demo_dir, k=10):
-    contact_label = np.load(f"{demo_dir}/episode_0/contact_label.npy").astype(np.float32)
-    gripper_states = np.load(f"{demo_dir}/episode_0/gripper_states.npy").astype(np.float32)
-    door_frame_poses = get_door_frame_poses(demo_dir, 0)
+    contact_label = np.load(f"{demo_dir}/episode_30/contact_label.npy").astype(np.float32)
+    gripper_states = np.load(f"{demo_dir}/episode_30/gripper_states.npy").astype(np.float32)
+    door_frame_poses = get_door_frame_poses(demo_dir)
     
     transformed_data = []
     
@@ -138,7 +138,7 @@ def process_episode(demo_dir, k=10):
             'pose': door_quat
         })
     
-    output_path = f"{demo_dir}/episode_0/validate_training_input_obc.npy"
+    output_path = f"{demo_dir}/episode_30/validate_training_input_obc.npy"
     np.save(output_path, transformed_data)
     print(f"Saved transformed data to {output_path}")
 

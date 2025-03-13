@@ -374,15 +374,7 @@ class PointCloudFromModel(PointCloudBase):
 
     def extract_contact_point(self,save_label = None):
         dist_data = np.load(self.dist_data_path)
-        # min_distance_index = np.argmin(dist_data[:, -1])
-        # reference_point = dist_data[min_distance_index, :3]  # Extract first 3 elements
-        # point_data = np.array(dist_data[:,:3])
-        # combined_points = np.vstack((self.points, point_data))
-        # combined_pcd = o3d.geometry.PointCloud()
-        # combined_pcd.points = o3d.utility.Vector3dVector(combined_points)
-        # o3d.visualization.draw_geometries([combined_pcd])
-        # print(f"min_dist:{min_distance_index},dist: {dist_data[min_distance_index, -1] } point: {reference_point}")
-
+       
         # Initialize output
         contact_labels = np.zeros((len(dist_data), 10000), dtype=int)
         results = []
@@ -422,6 +414,99 @@ class PointCloudFromModel(PointCloudBase):
         #     contact_points_count = np.sum(result)  # Count the number of contact points in this step
         #     print(f"Step {step}: Number of contact points = {contact_points_count}")
         
+    def extract_contact_point_two_stage(self, save_label=False):
+        """
+        Extract contact points with different methods for approaching and contact stages.
+        
+        Approaching stage: Use the contact point from the first contact step
+        Contact stage: Calculate contact points based on minimum distance
+        """
+        dist_data = np.load(self.dist_data_path)
+        data = np.load(self.task_data_path, allow_pickle=True)
+        
+        # Initialize output
+        contact_labels = np.zeros((len(dist_data), 10000), dtype=int)
+        results = []
+        
+        # First, detect the transition step where door starts opening
+        transition_step = None
+        previous_orientation = None
+        
+        for i, row in enumerate(data):
+            row_list = row.tolist()
+            object_name = 'door_main_visible'
+            
+            try:
+                idx = row_list.index(object_name)
+                current_pose = row_list[idx-7:idx]
+                current_orientation = current_pose[-4:]  # Extract quaternion
+                
+                if previous_orientation is not None:
+                    # Check if orientation has changed (door has started opening)
+                    if not np.array_equal(current_orientation, previous_orientation):
+                        transition_step = i
+                        print(f"Door opening detected at step {transition_step}")
+                        break
+                
+                previous_orientation = current_orientation
+            except ValueError:
+                print(f"Object '{object_name}' not found in row {i}. Skipping...")
+        
+        if transition_step is None:
+            print("Warning: Could not detect door opening transition. Using default approach.")
+            return self.extract_contact_point(save_label)
+        
+        # Get contact point at transition step
+        transition_points = self._load_pcd(transition_step)
+        reference_point = dist_data[transition_step, :3]
+        distances = np.linalg.norm(transition_points - reference_point, axis=1)
+        transition_contact_idx = np.argmin(distances)
+        transition_contact_point = transition_points[transition_contact_idx]
+        
+        print(f"Transition contact point found at index {transition_contact_idx}")
+        
+        # Process each step based on its stage
+        for step in range(len(dist_data)):
+            points = self._load_pcd(step)
+            
+            # Approaching stage: use same contact point as transition step
+            if step < transition_step:
+                # Find the point in current PCD closest to the transition contact point
+                distances = np.linalg.norm(points - transition_contact_point, axis=1)
+                contact_idx = np.argmin(distances)
+                print(f"Approaching stage - Step {step}: using transition point as reference")
+            
+            # Contact stage: calculate based on minimum distance to reference point
+            else:
+                reference_point = dist_data[step, :3]
+                distances = np.linalg.norm(points - reference_point, axis=1)
+                contact_idx = np.argmin(distances)
+                print(f"Contact stage - Step {step}: using min distance calculation")
+            
+            # Create labels
+            labels = np.zeros((points.shape[0], 1), dtype=int)
+            labels[contact_idx] = 1
+            contact_labels[step, contact_idx] = 1
+            results.append((step, contact_idx))
+            
+            # Save labeled point cloud if requested
+            if save_label:
+                points_with_labels = np.hstack((points, labels))
+                output_dir = os.path.join(self.base_dir, "pcd_with_labels")
+                os.makedirs(output_dir, exist_ok=True)
+                output_file = os.path.join(output_dir, f"{step}.npy")
+                np.save(output_file, points_with_labels)
+        
+        # Output results
+        for step, result in results:
+            print(f"Step {step}: Point Index in PCD = {result}")
+        
+        # Save contact labels
+        contact_label_file = os.path.join(self.base_dir, "contact_label.npy")
+        np.save(contact_label_file, contact_labels)
+        
+        return results, contact_labels
+
     def print_dist(self):
         dist_data = np.load(self.dist_data_path)
         for step in range(len(dist_data)): 
@@ -440,30 +525,24 @@ if __name__ == "__main__":
 
     # pcd1 = PointCloudFromModel(
     #     pcd_dir = "data/open_door/episode_0/pcd_from_mesh", 
-    #     step=1, label = True)
+    #     step=1)
     
+    # pcd1.extract_poses(change=True)
     # pcd1.extract_contact_point()
+
+
+
+    ###### produce contact label
     base_dir = "data/open_door"
-
-    # Get a list of all episodes (assuming episodes are named 'episode_0', 'episode_1', etc.)
-    # Here we assume episodes are stored as directories like "episode_0", "episode_1", ...
     episode_dirs = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d)) and d.startswith('episode')]
-
-    # Loop through all the episode directories
     for episode_dir in episode_dirs:
         print(f"Processing {episode_dir}...")
-
-        # Set the pcd_dir path for the current episode
         pcd_dir = os.path.join(base_dir, episode_dir, "pcd_from_mesh")
-
-        # Initialize the PointCloudFromModel instance for the current episode
         pcd = PointCloudFromModel(
             pcd_dir=pcd_dir,
             step=1,  # Assuming step = 1 for the example, you can adjust as needed
             label=True
         )
-        
-        # Extract contact points for the current episode
-        pcd.extract_contact_point(save_label=True)
+        pcd.extract_contact_point_two_stage()
 
     print("All episodes processed.")

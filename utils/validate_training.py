@@ -86,7 +86,8 @@ class VisualizeEpisode:
         print(f"Visualized step {t} with {len(actions)} sequential actions relative to ref_frame.")
 
 if __name__ == "__main__":
-    saved_data_path = "data/open_door/episode_0/validate_training_input_obc.npy"  # Update with correct path
+    saved_data_path = "data/open_door/episode_30/validate_training_input_obc.npy"  # Update with correct path
     visualizer = VisualizeEpisode(saved_data_path)
     for t, step_data in enumerate(visualizer.saved_data):
         visualizer.visualize_step(t, step_data['action'], step_data['pose'], step_data['point'])
+# first the validate training data in obc is called to produce the validate_training_input_obc.npy for validate training to visualize the data
