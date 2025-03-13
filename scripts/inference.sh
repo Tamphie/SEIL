@@ -4,7 +4,7 @@
 task_name="open_door"
 episode_length=180
 policy_class="ACT"  # ["ACT", "Diffusion"]
-visual_encoder="resnet18"  # ["dinov2", "resnet18"]
+visual_encoder="pointnet"  # ["dinov2", "resnet18", "pointnet"]
 variant="vits14"  # ["vits14", "vitb14", "vitl14", "vitg14"]
 predict_value="ee_pos_ori" # ["joint_states", "ee_pos_ori", "ee_delta_pos_ori", "ee_relative_pos_ori"]
 if [ "$predict_value" = "joint_states" ]; then
@@ -12,7 +12,7 @@ if [ "$predict_value" = "joint_states" ]; then
 else
     state_dim=10
 fi
-obs_type="rgbd"
+obs_type="pcd"
 # Export environment variables
 export MASTER_ADDR='localhost'  # Use the appropriate master node address
 export MASTER_PORT=12345        # Use any free port

@@ -130,7 +130,7 @@ class SEILinference(PolicyInferenceAPI):
         
         elif self.config["obs_type"] == "pcd":
             pcd_from_mesh = np.array(obs.pcd_from_mesh)
-            pcd = torch.from_numpy(pcd_from_mesh).float()
+            pcd = torch.from_numpy(pcd_from_mesh).float().cuda()
             # pcd = pcd.permute(2, 0, 1)
             # pcd = pcd.unsqueeze(0)
             rgb_images = pcd # [10000,3]
@@ -196,8 +196,7 @@ class SEILinference(PolicyInferenceAPI):
                 raise ValueError("The quaternion has zero magnitude and cannot be normalized.")
             action_world_quat = action_world_quat / norm
             action_world = np.concatenate([action_world_pos, action_world_quat,[predicted_gripper]], axis=-1)
-            # action_world = torch.from_numpy(action_world).float().cuda().unsqueeze(0)
-            # action_world = action_world.detach().cpu().numpy()
+            print("action_world shape is ",action_world.shape)
             # self.task_env.step(action_world)
             # self.test_by_dummy(action_world, t)
 
@@ -382,7 +381,8 @@ def main():
         "dec_layers": args["dec_layers"],
         "nheads": args["nheads"],
         "camera_names": ["top"],  # Assuming camera_names is ["top"]
-        "state_dim":  args["state_dim"],  # TODO
+        "state_dim":  args["state_dim"],  
+        "obs_type": args["obs_type"],
     },
     "task_name": args["task_name"],
     "seed": args["seed"],
