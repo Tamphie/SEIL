@@ -24,7 +24,7 @@ export MASTER_PORT=12345        # Use any free port
 python SEIL_train.py \
     --policy_class ${policy_class} \
     --task_name ${task_name} \
-    --batch_size 32 \
+    --batch_size 16 \
     --chunk_size ${chunk_size} \
     --num_epochs 300 \
     --ckpt_dir check_point/${task_name}_${policy_class}_${visual_encoder}_${variant} \
@@ -32,4 +32,11 @@ python SEIL_train.py \
     --predict_value ${predict_value} \
     --obs_type ${obs_type} \
     --visual_encoder ${visual_encoder} \
-    --variant ${variant}
+    --variant ${variant} \
+    --pointnet_dir pointnet2 \
+    --seg_lr 0.001 \
+    --seg_num_point 2048 \
+    --seg_num_classes 2 \
+    --seg_optimizer adam
+    # --train_segmentation \
+    #--joint_training \

@@ -86,5 +86,5 @@ python utils/process_pcd.py
 To validate traning data in object-centric:
 ```bash
 python utils/validate_training_data_in_obc.py
-python utils/validate_training_data.py
+python utils/validate_training.py
 ```

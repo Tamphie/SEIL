@@ -18,8 +18,99 @@ class SEILinference(PolicyInferenceAPI):
 
     def __init__(self,config):
         super().__init__(config)
+        self.seg_model = None
+        self.use_seg_model = config.get('use_segmentation', False)
+        
+        if self.use_seg_model:
+            seg_checkpoint = config.get('seg_checkpoint')
+            if not seg_checkpoint:
+                raise ValueError("Segmentation checkpoint path not provided in config")
+            
+            self.seg_model = self._load_segmentation_model(seg_checkpoint)
 
-
+    def _load_segmentation_model(self, checkpoint_path):
+        """Load the PointNet++ segmentation model from checkpoint."""
+        print(f"Loading segmentation model from {checkpoint_path}")
+        
+        # Create segmentation model configuration
+        seg_config = self.config.get('seg_config', {})
+        if not seg_config:
+            # Default configuration if not provided
+            seg_config = {
+                'num_point': 10000,  # Default number of points in point cloud
+                'num_classes': 2,    # Binary segmentation (contact/no contact)
+                'pointnet_dir': self.config.get('pointnet_dir', 'pointnet2'),
+            }
+        
+        # Import here to ensure it's available
+        from RobotIL.policy import PointNetSegModel
+        
+        # Create the model
+        seg_model = PointNetSegModel(seg_config)
+        
+        # Load checkpoint
+        checkpoint = torch.load(checkpoint_path, map_location='cuda')
+        seg_model.load_state_dict(checkpoint)
+        
+        # Move to device and set to evaluation mode
+        seg_model.to('cuda')
+        seg_model.eval()
+        
+        print("Segmentation model loaded successfully")
+        return seg_model
+    
+    def _get_contact_points_from_segmentation(self, point_cloud, threshold=0.7):
+        """Get contact points using the PointNet++ segmentation model."""
+        if not self.use_seg_model or self.seg_model is None:
+            raise ValueError("Segmentation model not initialized but trying to use it")
+        
+        # Convert point cloud to torch tensor if needed
+        if isinstance(point_cloud, np.ndarray):
+            point_cloud_tensor = torch.from_numpy(point_cloud).float().cuda()
+        else:
+            point_cloud_tensor = point_cloud
+            
+        # Add batch dimension if missing
+        if len(point_cloud_tensor.shape) == 2:
+            point_cloud_tensor = point_cloud_tensor.unsqueeze(0)
+            
+        # Get contact points from segmentation model
+        batch_contact_points, batch_contact_indices, batch_contact_masks = self.seg_model.get_contact_points(
+            point_cloud_tensor, threshold
+        )
+        
+        # Since we're processing a single point cloud (inference time)
+        contact_points = batch_contact_points[0]  # Shape [M, 3]
+        contact_indices = batch_contact_indices[0]  # Shape [M]
+        contact_mask = batch_contact_masks[0]  # Shape [N]
+        
+        # Find the most likely contact point (highest probability)
+        if len(contact_indices) > 0:
+            # Get the segmentation model predictions
+            with torch.no_grad():
+                outputs = self.seg_model.forward(point_cloud_tensor)
+                
+            pred = outputs['seg_pred']  # [1, N, 2]
+            probs = torch.softmax(pred[0], dim=1)[:, 1]  # Contact probabilities [N]
+            
+            # Find the point with highest probability
+            max_prob_idx = torch.argmax(probs[contact_indices])
+            contact_idx = contact_indices[max_prob_idx].item()
+            contact_point_position = point_cloud[contact_idx]
+        else:
+            # Fallback: If no contact points found, use the point with highest probability
+            with torch.no_grad():
+                outputs = self.seg_model.forward(point_cloud_tensor)
+                
+            pred = outputs['seg_pred']  # [1, N, 2]
+            probs = torch.softmax(pred[0], dim=1)[:, 1]  # Contact probabilities [N]
+            
+            contact_idx = torch.argmax(probs).item()
+            contact_point_position = point_cloud[contact_idx]
+            print("No contact points above threshold, using highest probability point instead")
+            
+        return contact_point_position, contact_idx, contact_mask
+    
     def _initialize_environment(self):
         from rlbench.environment import Environment
         from rlbench.action_modes.action_mode import MoveArmThenGripper
@@ -169,11 +260,18 @@ class SEILinference(PolicyInferenceAPI):
         # pre_contact : shape [1,1,10000]
         action, pred_contact, actions = self._query_policy(t, qpos, curr_image, all_time_actions)
 
-        if self.config["predict_value"] == "ee_pos_ori":
-
+        if self.use_seg_model:
+            # Get contact points from segmentation model
+            pcd_from_mesh = pcd_from_mesh.permute(1,0)
+            contact_point_position, contact_idx, _ = self._get_contact_points_from_segmentation(
+                pcd_from_mesh, threshold=0.7
+            )
+        else:
             pred_contact = pred_contact.squeeze().detach().cpu().numpy()  # shape [10000]
             contact_idx = np.argmax(pred_contact)
             contact_point_position = pcd_from_mesh[contact_idx]
+
+        if self.config["predict_value"] == "ee_pos_ori":
 
             door_pose_np = door_pose.squeeze(0).detach().cpu().numpy()  # shape (7,)
             door_quat = door_pose_np[3:]            # (q_x, q_y, q_z, q_w)
@@ -353,6 +451,29 @@ def parse_arguments():
     parser.add_argument(
         "--state_dim", type=int, default=10, help="state_dimension"
     )
+    parser.add_argument(
+        "--use_segmentation",
+        action="store_true",
+        help="Whether to use the segmentation model for contact prediction",
+    )
+    parser.add_argument(
+        "--seg_checkpoint",
+        type=str,
+        default=None,
+        help="Path to the segmentation model checkpoint",
+    )
+    parser.add_argument(
+        "--pointnet_dir",
+        type=str,
+        default="pointnet2",
+        help="Directory containing PointNet++ code",
+    )
+    parser.add_argument(
+        "--seg_threshold",
+        type=float,
+        default=0.7,
+        help="Probability threshold for contact point segmentation",
+    )
     return vars(parser.parse_args())
 
 def main():
@@ -392,7 +513,19 @@ def main():
     "batch_size": 1,
     "episode_len": args["episode_len"],
     "num_epochs": 1,  # Default number of epochs for evaluation
+    # ADD THESE ITEMS FOR SEGMENTATION CONFIGURATION:
+    "use_segmentation": args.get("use_segmentation", False),
+    "seg_checkpoint": args.get("seg_checkpoint"),
+    "pointnet_dir": args.get("pointnet_dir", "pointnet2"),
+    "seg_config": {
+        "num_point": 10000,  # Point cloud size
+        "num_classes": 2,    # Binary classification (contact/non-contact)
+        "pointnet_dir": args.get("pointnet_dir", "pointnet2"),
+    },
+    "seg_threshold": args.get("seg_threshold", 0.7),
     }
+
+    
 
     # Initialize the PolicyInferenceAPI
     inference = SEILinference(config)
