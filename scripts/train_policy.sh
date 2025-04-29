@@ -9,7 +9,7 @@ predict_value="ee_pos_ori" # ["joint_states", "ee_pos_ori"]
 obs_type="pcd" # ["rgbd", "pcd"] 
 # Conditional chunk_size setting
 if [ "$policy_class" == "ACT" ]; then
-    chunk_size=10
+    chunk_size=50
 elif [ "$policy_class" == "Diffusion" ]; then
     chunk_size=16
 else
@@ -24,7 +24,7 @@ export MASTER_PORT=12345        # Use any free port
 python SEIL_train.py \
     --policy_class ${policy_class} \
     --task_name ${task_name} \
-    --batch_size 16 \
+    --batch_size 32 \
     --chunk_size ${chunk_size} \
     --num_epochs 300 \
     --ckpt_dir check_point/${task_name}_${policy_class}_${visual_encoder}_${variant} \

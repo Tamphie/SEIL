@@ -53,7 +53,12 @@ class TaskEnvironment(object):
         self._pyrep.start()
         self._robot_shapes = self._robot.arm.get_objects_in_tree(
             object_type=ObjectType.SHAPE)
-
+    @property
+    def scene(self):
+        return self._scene
+    @property
+    def task(self):
+        return self._task
     def get_name(self) -> str:
         return self._task.get_name()
 
@@ -72,13 +77,14 @@ class TaskEnvironment(object):
     def variation_count(self) -> int:
         return self._task.variation_count()
 
-    def reset(self, demo = None) -> (List[str], Observation):
+    def reset(self, demo = None) -> Observation:
         self._scene.reset()
         try:
             place_demo = demo != None and hasattr(demo, 'num_reset_attempts') and demo.num_reset_attempts != None
-            desc = self._scene.init_episode(
-                self._variation_number, max_attempts=_MAX_RESET_ATTEMPTS if not place_demo else demo.num_reset_attempts,
-                randomly_place=not self._static_positions, place_demo=place_demo)
+            # desc = self._scene.init_episode(
+            #     2 % self.variation_count(), max_attempts=10)
+                # max_attempts=_MAX_RESET_ATTEMPTS if not place_demo else demo.num_reset_attempts,
+                # randomly_place=not self._static_positions, place_demo=place_demo)
         except (BoundaryError, WaypointError) as e:
             raise TaskEnvironmentError(
                 'Could not place the task %s in the scene. This should not '
@@ -87,7 +93,8 @@ class TaskEnvironment(object):
 
         self._reset_called = True
         # Returns a list of descriptions and the first observation
-        return desc, self._scene.get_observation()
+        # return desc, self._scene.get_observation()
+        return self._scene.get_observation()
 
     def get_observation(self) -> Observation:
         return self._scene.get_observation()

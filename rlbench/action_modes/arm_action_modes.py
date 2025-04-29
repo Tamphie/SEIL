@@ -1,5 +1,4 @@
 from abc import abstractmethod
-
 import numpy as np
 from enum import Enum
 from typing import List, Union
@@ -169,6 +168,24 @@ class JointTorque(ArmActionMode):
         robot.arm.set_control_loop_enabled(False)
 
 
+def interpolate_poses(start_pos, start_quat, end_pos, end_quat, steps=10):
+    import numpy as np
+    from scipy.spatial.transform import Rotation as R, Slerp
+
+    # Linearly interpolate positions
+    positions = [np.linspace(start_pos[i], end_pos[i], steps) for i in range(3)]
+    positions = np.stack(positions, axis=1)
+
+    # # Slerp for quaternions
+    # key_times = [0, 1]
+    # key_rots = R.from_quat([start_quat, end_quat])
+    # slerp = Slerp(key_times, key_rots)
+    # interp_times = np.linspace(0, 1, steps)
+    # slerped_rots = slerp(interp_times)
+    # quaternions = slerped_rots.as_quat()
+    quaternions = [end_quat] * steps
+    return list(zip(positions, quaternions))[1:]
+
 class EndEffectorPoseViaPlanning(ArmActionMode):
     """High-level action where target pose is given and reached via planning.
 
@@ -251,33 +268,68 @@ class EndEffectorPoseViaPlanning(ArmActionMode):
                             scene.robot.arm.check_arm_collision(
                                 s))]
                 [s.set_collidable(False) for s in colliding_shapes]
+            
+        current_pos = scene.robot.arm.get_tip().get_position()
+        current_quat = scene.robot.arm.get_tip().get_quaternion()
 
-        try:
-            path = scene.robot.arm.get_path(
-                action[:3],
-                quaternion=action[3:],
-                ignore_collisions=not self._collision_checking,
-                relative_to=relative_to,
-                trials=100,
-                max_configs=10,
-                max_time_ms=10,
-                trials_per_goal=5,
-                algorithm=Algos.RRTConnect
-            )
-            [s.set_collidable(True) for s in colliding_shapes]
-        except ConfigurationPathError as e:
-            [s.set_collidable(True) for s in colliding_shapes]
-            raise InvalidActionError(
-                'A path could not be found. Most likely due to the target '
-                'being inaccessible or a collison was detected.') from e
-        done = False
-        while not done:
-            done = path.step()
-            scene.step()
-            success, terminate = scene.task.success()
-            # If the task succeeds while traversing path, then break early
-            if success:
-                break
+        interpolated_poses = interpolate_poses(
+            start_pos=current_pos,
+            start_quat=current_quat,
+            end_pos=action[:3],           # action[:3]
+            end_quat=action[3:],         # action[3:]
+            steps=3                      # or more if needed
+        )
+        for pos, quat in interpolated_poses:
+            try:
+                path = scene.robot.arm.get_path(
+                    pos,
+                    -np.array(quat),
+                    # action[:3],
+                    # quaternion=action[3:],
+                    ignore_collisions=not self._collision_checking,
+                    relative_to=relative_to,
+                    trials=100,
+                    max_configs=10,
+                    max_time_ms=10,
+                    trials_per_goal=5,
+                    algorithm=Algos.RRTConnect
+                )
+                [s.set_collidable(True) for s in colliding_shapes]
+                done = False
+                while not done:
+                    done = path.step()
+                    scene.step()
+                    success, terminate = scene.task.success()
+                    # If the task succeeds while traversing path, then break early
+                    if success:
+                        break
+            except ConfigurationPathError as e:
+                print("Planning failed with error:", e)
+                [s.set_collidable(True) for s in colliding_shapes]
+                continue
+                # raise InvalidActionError(
+                #     'A path could not be found. Most likely due to the target '
+                #     'being inaccessible or a collison was detected.') from e
+        # try:
+        #     path = scene.robot.arm.get_path(
+        #         action[:3],
+        #         quaternion=action[3:],
+        #         ignore_collisions=not self._collision_checking,
+        #         relative_to=relative_to,
+        #         trials=100,
+        #         max_configs=200,
+        #         max_time_ms=10,
+        #         trials_per_goal=5,
+        #         algorithm=Algos.RRTConnect
+        #     )
+        #     [s.set_collidable(True) for s in colliding_shapes]
+        # except ConfigurationPathError as e:
+        #     print("Planning failed with error:", e)
+        #     [s.set_collidable(True) for s in colliding_shapes]
+        #     raise InvalidActionError(
+        #         'A path could not be found. Most likely due to the target '
+        #         'being inaccessible or a collison was detected.') from e
+        
 
     def action_shape(self, scene: Scene) -> tuple:
         return 7,
@@ -327,24 +379,36 @@ class EndEffectorPoseViaIK(ArmActionMode):
             action = calculate_delta_pose(scene.robot, action)
         relative_to = None if self._frame == RelativeFrame.WORLD else scene.robot.arm.get_tip()
         print(f"relative_to:{relative_to}")
-        try:
-            print(f"position:{action[:3]}, quaternion:{action[3:]}")
-            joint_positions = scene.robot.arm.solve_ik_via_sampling(
-                action[:3], quaternion=action[3:], relative_to=relative_to)
-            if joint_positions.shape == (1, 7):  # If batch dimension exists
-                joint_positions = joint_positions.squeeze(0)  # Convert to (7,)
-            if joint_positions is None:
-                raise IKError('IK failed')
-            else:
-                print(f"joint_positions:{joint_positions}")
-                print("joint postions shape:", joint_positions.shape)
-            
-            scene.robot.arm.set_joint_target_positions(joint_positions)
-        except IKError as e:
-            raise InvalidActionError(
-                'Could not perform IK via Jacobian; most likely due to current '
-                'end-effector pose being too far from the given target pose. '
-                'Try limiting/bounding your action space.') from e
+        current_pos = scene.robot.arm.get_tip().get_position()
+        current_quat = scene.robot.arm.get_tip().get_quaternion()
+
+        interpolated_poses = interpolate_poses(
+            start_pos=current_pos,
+            start_quat=current_quat,
+            end_pos=action[:3],           # action[:3]
+            end_quat=action[3:],         # action[3:]
+            steps=3                      # or more if needed
+        )
+        for pos, quat in interpolated_poses:
+            try:
+                print(f"position:{action[:3]}, quaternion:{action[3:]}")
+                joint_positions = scene.robot.arm.solve_ik_via_sampling(
+                    # action[:3], quaternion=action[3:], relative_to=relative_to)
+                    pos, -np.array(quat), relative_to=relative_to)
+                if joint_positions.shape == (1, 7):  # If batch dimension exists
+                    joint_positions = joint_positions.squeeze(0)  # Convert to (7,)
+                if joint_positions is None:
+                    raise IKError('IK failed')
+                else:
+                    print(f"joint_positions:{joint_positions}")
+                    print("joint postions shape:", joint_positions.shape)
+                
+                scene.robot.arm.set_joint_target_positions(joint_positions)
+            except IKError as e:
+                raise InvalidActionError(
+                    'Could not perform IK via Jacobian; most likely due to current '
+                    'end-effector pose being too far from the given target pose. '
+                    'Try limiting/bounding your action space.') from e
         done = False
         prev_values = None
         # Move until reached target joint positions or until we stop moving

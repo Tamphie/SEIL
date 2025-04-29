@@ -59,57 +59,64 @@ class SEILinference(PolicyInferenceAPI):
         print("Segmentation model loaded successfully")
         return seg_model
     
-    def _get_contact_points_from_segmentation(self, point_cloud, threshold=0.7):
+    def _transform_points_to_local(self, global_points, door_quat):
+        """
+        Transform the given points from the world frame to the local frame 
+        defined by (centroid, door_quat).
+        
+        Parameters:
+        global_points: (N, 3) array of point positions in world coordinates
+        door_quat: (4,) quaternion in [x, y, z, w] format representing door orientation
+        
+        Returns:
+        local_points: (N, 3) array of transformed point positions in local coordinates
+        """
+        # Ensure global_points is a numpy array
+        global_points = np.asarray(global_points)
+        # Convert door quaternion to rotation matrix
+        R_door = self.quaternion_to_matrix(door_quat)
+        
+        # Initialize output array
+        local_points = np.zeros_like(global_points)
+        centroid = global_points.mean(axis=0)
+
+        # For each point, apply the transformation:
+        #   local_point = R_door^T * (global_point - centroid)
+        for i in range(global_points.shape[0]):
+            local_points[i] = R_door.T.dot(global_points[i] - centroid)
+
+        return local_points
+    def _get_contact_points_from_segmentation(self, t, point_cloud_tensor, door_pose, threshold=0.7):
         """Get contact points using the PointNet++ segmentation model."""
         if not self.use_seg_model or self.seg_model is None:
             raise ValueError("Segmentation model not initialized but trying to use it")
-        
-        # Convert point cloud to torch tensor if needed
-        if isinstance(point_cloud, np.ndarray):
-            point_cloud_tensor = torch.from_numpy(point_cloud).float().cuda()
-        else:
-            point_cloud_tensor = point_cloud
+        if t % self.query_frequency == 0: 
+
+            if len(point_cloud_tensor.shape) == 2:
+                point_cloud_tensor = point_cloud_tensor.unsqueeze(0)
             
-        # Add batch dimension if missing
-        if len(point_cloud_tensor.shape) == 2:
-            point_cloud_tensor = point_cloud_tensor.unsqueeze(0)
-            
-        # Get contact points from segmentation model
-        batch_contact_points, batch_contact_indices, batch_contact_masks = self.seg_model.get_contact_points(
-            point_cloud_tensor, threshold
-        )
-        
-        # Since we're processing a single point cloud (inference time)
-        contact_points = batch_contact_points[0]  # Shape [M, 3]
-        contact_indices = batch_contact_indices[0]  # Shape [M]
-        contact_mask = batch_contact_masks[0]  # Shape [N]
-        
-        # Find the most likely contact point (highest probability)
-        if len(contact_indices) > 0:
-            # Get the segmentation model predictions
+            # Get contact points from segmentation model
             with torch.no_grad():
-                outputs = self.seg_model.forward(point_cloud_tensor)
-                
-            pred = outputs['seg_pred']  # [1, N, 2]
-            probs = torch.softmax(pred[0], dim=1)[:, 1]  # Contact probabilities [N]
+                batch_contact_points, batch_contact_indices, batch_contact_masks, probs = self.seg_model.get_contact_points(
+                    point_cloud_tensor, threshold
+                )
             
-            # Find the point with highest probability
-            max_prob_idx = torch.argmax(probs[contact_indices])
-            contact_idx = contact_indices[max_prob_idx].item()
-            contact_point_position = point_cloud[contact_idx]
-        else:
-            # Fallback: If no contact points found, use the point with highest probability
-            with torch.no_grad():
-                outputs = self.seg_model.forward(point_cloud_tensor)
-                
-            pred = outputs['seg_pred']  # [1, N, 2]
-            probs = torch.softmax(pred[0], dim=1)[:, 1]  # Contact probabilities [N]
+            # Since we're processing a single point cloud (inference time)
+            contact_indices = batch_contact_indices[0]  # Shape [M]
+            # contact_mask = batch_contact_masks[0]  # Shape [N]
             
-            contact_idx = torch.argmax(probs).item()
-            contact_point_position = point_cloud[contact_idx]
-            print("No contact points above threshold, using highest probability point instead")
-            
-        return contact_point_position, contact_idx, contact_mask
+            # Find the most likely contact point (highest probability)
+            if len(contact_indices) > 0:
+                max_prob_idx = torch.argmax(probs[contact_indices])
+                self.contact_idx = contact_indices[max_prob_idx].item()
+            else:
+                print("No contact points above threshold, using highest probability point instead")
+                self.contact_idx = torch.argmax(probs).item()
+            contact_idx = self.contact_idx
+            # contact_point_position = point_cloud[contact_idx]
+        else:   
+            contact_idx = self.contact_idx
+        return contact_idx
     
     def _initialize_environment(self):
         from rlbench.environment import Environment
@@ -121,13 +128,14 @@ class SEILinference(PolicyInferenceAPI):
         obs_config = ObservationConfig()
         obs_config.set_all(True)
         if self.config["predict_value"] == "ee_pos_ori":
+            arm_action_mode = EndEffectorPoseViaPlanning()
             self.env = Environment(
                 action_mode=MoveArmThenGripper(
                 #action_shape 7; 1
-                arm_action_mode=EndEffectorPoseViaPlanning(), gripper_action_mode=Discrete()),
+                arm_action_mode=arm_action_mode, gripper_action_mode=Discrete()),
                 obs_config=obs_config,
                 headless=False)
-            print("EndEffectorPoseViaPlanning")
+            print(f"arm_action_mode: {arm_action_mode}")
         else:
             self.env = Environment(
                 action_mode=MoveArmThenGripper(
@@ -140,12 +148,16 @@ class SEILinference(PolicyInferenceAPI):
         from rlbench.backend.utils import task_file_to_task_class
         task_name = task_file_to_task_class(self.config["task_name"])
         self.task_env = self.env.get_task(task_name)
-        
+        descriptions = self.task_env.scene.init_episode(
+            4 % self.task_env.task.variation_count(),
+            max_attempts=10)
 
     def _get_data(self, t):
         # rgb_images = []
         if t == 0:
-            descriptions, obs = self.task_env.reset()
+            # self.task_env.scene.reset()
+            obs = self.task_env.reset()
+            obs = self.task_env.scene.get_observation()
             print(f"reset successfully")
         else:
             obs = self.task_env.get_observation()
@@ -237,6 +249,8 @@ class SEILinference(PolicyInferenceAPI):
         :return: A 3x3 numpy array (rotation matrix).
         """
         # Create a Rotation object from the quaternion
+        if isinstance(quat, torch.Tensor):
+            quat = quat.detach().cpu().numpy()
         r = R.from_quat(quat)  # [x, y, z, w]
         # Convert to a 3x3 rotation matrix
         rot_matrix = r.as_matrix()
@@ -258,25 +272,33 @@ class SEILinference(PolicyInferenceAPI):
         """
         curr_image = rgb_images
         # pre_contact : shape [1,1,10000]
-        action, pred_contact, actions = self._query_policy(t, qpos, curr_image, all_time_actions)
+        door_quat = door_pose[:,3:].squeeze(0)
+        nor_point_cloud = self._transform_points_to_local(pcd_from_mesh, door_quat)
+        if isinstance(nor_point_cloud, np.ndarray):
+            point_cloud_tensor = torch.from_numpy(nor_point_cloud).float().cuda()
+        else:
+            point_cloud_tensor = nor_point_cloud
+            
+        action, pred_contact, actions = self._query_policy(t, qpos, point_cloud_tensor, all_time_actions)
 
         if self.use_seg_model:
             # Get contact points from segmentation model
-            pcd_from_mesh = pcd_from_mesh.permute(1,0)
-            contact_point_position, contact_idx, _ = self._get_contact_points_from_segmentation(
-                pcd_from_mesh, threshold=0.7
+            # pcd_from_mesh = pcd_from_mesh.permute(1,0)
+            contact_idx = self._get_contact_points_from_segmentation(
+                t, point_cloud_tensor, door_pose, threshold=0.7
             )
+            contact_point_position = pcd_from_mesh[contact_idx]
         else:
             pred_contact = pred_contact.squeeze().detach().cpu().numpy()  # shape [10000]
             contact_idx = np.argmax(pred_contact)
             contact_point_position = pcd_from_mesh[contact_idx]
 
         if self.config["predict_value"] == "ee_pos_ori":
-
+            chunk_size = self.config["policy_config"]["num_queries"]
             door_pose_np = door_pose.squeeze(0).detach().cpu().numpy()  # shape (7,)
             door_quat = door_pose_np[3:]            # (q_x, q_y, q_z, q_w)
-            if t % 5 ==0:
-                self.visualize_step(t, actions, door_quat, contact_point_position)
+            if t % self.query_frequency ==0:
+                self.visualize_step(t, actions, door_quat, contact_point_position,chunk_size)
             R_door = self.quaternion_to_matrix(door_quat)
             
             action = action.squeeze(0).cpu().numpy()  # No need to detach here
@@ -294,8 +316,8 @@ class SEILinference(PolicyInferenceAPI):
                 raise ValueError("The quaternion has zero magnitude and cannot be normalized.")
             action_world_quat = action_world_quat / norm
             action_world = np.concatenate([action_world_pos, action_world_quat,[predicted_gripper]], axis=-1)
-            print("action_world shape is ",action_world.shape)
-            # self.task_env.step(action_world)
+            # print("action_world shape is ",action_world.shape)
+            self.task_env.step(action_world)
             # self.test_by_dummy(action_world, t)
 
         else:
@@ -322,17 +344,17 @@ class SEILinference(PolicyInferenceAPI):
         self.task_env._pyrep.step()
         print(f"{t} dummy action is {action}")
 
-    def visualize_step(self, t, actions, r_door, contact_position):
+    def visualize_step(self, t, actions, r_door, contact_position, chunk_size):
         from pyrep.objects.dummy import Dummy
         from pyrep import PyRep
         # Create or update the reference frame
         if t == 0:
             pr = PyRep()
             ref_frame = Dummy.create(size=0.05)
-            ref_frame.set_name(f"Reference_Frame_{t}")
+            ref_frame.set_name(f"Reference_Frame_{0}")
         else:
-            ref_frame = Dummy(f"Reference_Frame_{t-5}")
-            ref_frame.set_name(f"Reference_Frame_{t}")
+            ref_frame = Dummy(f"Reference_Frame_{0}")
+            # ref_frame.set_name(f"Reference_Frame_{t}")
         
         ref_frame.set_position(contact_position)
         ref_frame.set_quaternion(r_door)
@@ -340,7 +362,9 @@ class SEILinference(PolicyInferenceAPI):
         actions = actions.squeeze(0).detach().cpu().numpy()
         print(f"actions shape is {actions.shape}")
 
-        for i, action in enumerate(actions[:5]):
+        for i, action in enumerate(actions[:self.query_frequency]):
+        # for i in range(0, self.query_frequency, 2):
+            # action = actions[i]
             print(f"Action shape is {action.shape}")
             quat = self.rotation_6d_to_quaternion(action[3:9])
 
@@ -484,7 +508,8 @@ def main():
     # Prepare configuration dictionary
     config = {
     "env_class":None,#TODO
-    "ckpt_dir": os.path.join(args["ckpt_dir"], args["task_name"]),
+    # "ckpt_dir": os.path.join(args["ckpt_dir"], args["task_name"]),
+    "ckpt_dir": args["ckpt_dir"],
     "ckpt_name": args["ckpt_name"],
     
     "policy_class": args["policy_class"],

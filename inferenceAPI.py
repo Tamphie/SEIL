@@ -34,7 +34,7 @@ class PolicyInferenceAPI:
         self._load_policy()
         self._initialize_environment()
         self.temporal_agg = self.config.get("temporal_agg", False)
-        self.query_frequency = 5
+        self.query_frequency = 50
         if self.temporal_agg and self.config["policy_class"] == "ACT":
             self.num_queries = self.config["policy_config"]["num_queries"]
             # num_queries default 100 for ACT
@@ -72,7 +72,7 @@ class PolicyInferenceAPI:
 
         self.policy = self._make_policy()
         if os.path.exists(ckpt_path):
-            checkpoint = torch.load(ckpt_path, map_location=torch.device("cuda:0"))
+            checkpoint = torch.load(ckpt_path, map_location=torch.device("cuda:0"), weights_only=True)
             loading_status = self.policy.load_state_dict(checkpoint, strict=False)
             print(f"Loaded checkpoint '{ckpt_path}' with status: {loading_status}")
         else:
@@ -102,6 +102,7 @@ class PolicyInferenceAPI:
             if t % self.query_frequency == 0:
                 self.all_actions, self.pred_contact = self.policy(qpos, curr_image)
             if self.temporal_agg:
+                print(f"@@@@@temporal_agg is {self.temporal_agg}")
                 if self.all_actions is None:
                     raise ValueError(
                         "all_actions is None when temporal_agg is enabled."

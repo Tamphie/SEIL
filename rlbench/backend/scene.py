@@ -217,9 +217,9 @@ class Scene(object):
         self.robot.gripper.set_joint_target_velocities(
             [0] * len(self.robot.gripper.joints))
 
-        if self.task is not None and self._has_init_task:
-            self.task.cleanup_()
-            self.task.restore_state(self._initial_task_state)
+        # if self.task is not None and self._has_init_task:
+        #     self.task.cleanup_()
+        #     self.task.restore_state(self._initial_task_state)
         self.task.set_initial_objects_in_scene()
 
     def get_observation(self) -> Observation:

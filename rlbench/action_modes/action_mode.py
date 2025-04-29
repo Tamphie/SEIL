@@ -36,10 +36,9 @@ class MoveArmThenGripper(ActionMode):
 
     def action(self, scene: Scene, action: np.ndarray):
         arm_act_size = np.prod(self.arm_action_mode.action_shape(scene))
+        print("action: ", action)
         arm_action = np.array(action[:arm_act_size])
-        print("shape of arm action: ", arm_action.shape)
         ee_action = np.array(action[arm_act_size:])
-        print("shape of ee action: ", ee_action.shape)
         self.arm_action_mode.action(scene, arm_action)
         self.gripper_action_mode.action(scene, ee_action)
 

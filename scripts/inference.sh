@@ -16,12 +16,13 @@ obs_type="pcd"
 # Export environment variables
 export MASTER_ADDR='localhost'  # Use the appropriate master node address
 export MASTER_PORT=12345        # Use any free port
-seg_checkpoint="check_point/${task_name}_${policy_class}_${visual_encoder}_${variant}/seg_model/seg_model_best.ckpt"
-
-#  --temporal_agg \
+seg_checkpoint="check_point/seg_model/seg_model_best.ckpt"
+# seg_checkpoint="check_point/${task_name}_${policy_class}_${visual_encoder}_${variant}/seg_model/seg_model_best.ckpt"
+ckpt_dir="check_point/${task_name}_${policy_class}_${visual_encoder}_${variant}"
+    # 
 # Run the Python script
 python SEIL_infer.py \
-    --ckpt_dir check_point\
+    --ckpt_dir ${ckpt_dir} \
     --ckpt_name policy_best.ckpt \
     --task_name ${task_name} \
     --policy_class ${policy_class} \
@@ -32,8 +33,9 @@ python SEIL_infer.py \
     --predict_value ${predict_value} \
     --obs_type ${obs_type} \
     --episode_len ${episode_length}  \
-    --chunk_size 10 \
+    --chunk_size 50 \
+    --temporal_agg \
     --use_segmentation \
     --seg_checkpoint ${seg_checkpoint} \
-    --pointnet_dir ${pointnet_dir} \
+    --pointnet_dir pointnet2 \
     --seg_threshold 0.7
