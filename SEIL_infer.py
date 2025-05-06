@@ -13,6 +13,7 @@ from rlbench.backend import utils
 # from scipy.spatial.transform import Rotation as R
 # import numpy as np
 from inferenceAPI import PolicyInferenceAPI
+from rlbench.backend.exceptions import InvalidActionError
 from scipy.spatial.transform import Rotation as R
 class SEILinference(PolicyInferenceAPI):
 
@@ -155,7 +156,6 @@ class SEILinference(PolicyInferenceAPI):
     def _get_data(self, t):
         # rgb_images = []
         if t == 0:
-            # self.task_env.scene.reset()
             obs = self.task_env.reset()
             obs = self.task_env.scene.get_observation()
             print(f"reset successfully")
@@ -297,8 +297,8 @@ class SEILinference(PolicyInferenceAPI):
             chunk_size = self.config["policy_config"]["num_queries"]
             door_pose_np = door_pose.squeeze(0).detach().cpu().numpy()  # shape (7,)
             door_quat = door_pose_np[3:]            # (q_x, q_y, q_z, q_w)
-            if t % self.query_frequency ==0:
-                self.visualize_step(t, actions, door_quat, contact_point_position,chunk_size)
+            # if t % self.query_frequency ==0:
+            #     self.visualize_step(t, actions, door_quat, contact_point_position,chunk_size)
             R_door = self.quaternion_to_matrix(door_quat)
             
             action = action.squeeze(0).cpu().numpy()  # No need to detach here
@@ -317,12 +317,21 @@ class SEILinference(PolicyInferenceAPI):
             action_world_quat = action_world_quat / norm
             action_world = np.concatenate([action_world_pos, action_world_quat,[predicted_gripper]], axis=-1)
             # print("action_world shape is ",action_world.shape)
-            self.task_env.step(action_world)
+            obs, success, done = self.task_env.step(action_world)
+            try:
+                print(f"step{t}, action{action_world}")
+                obs, success, done = self.task_env.step(action_world)
+            except InvalidActionError as e:
+                success, done = False, True  # Stop the episode due to failure
+                obs = None  # or previous observation, if needed
+
+
             # self.test_by_dummy(action_world, t)
 
         else:
-            self.task_env.step(action)
-
+            obs, success, done = self.task_env.step(action)
+        return success, done
+    
     def test_by_collect(self,t):
         action = np.load(
             f"data/{self.config['task_name']}/episode_0/gripper_states.npy"

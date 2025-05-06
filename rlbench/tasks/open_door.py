@@ -16,7 +16,7 @@ class OpenDoor(Task):
         self.register_success_conditions([
             JointCondition(self._door_joint, np.deg2rad(25))])
         self._door_unlock_cond = JointCondition(
-            Joint('door_handle_joint'), np.deg2rad(25))
+            Joint('door_handle_joint'), np.deg2rad(0))
 
     def init_episode(self, index: int) -> List[str]:
         self._door_unlocked = False

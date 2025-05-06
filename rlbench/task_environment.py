@@ -81,10 +81,9 @@ class TaskEnvironment(object):
         self._scene.reset()
         try:
             place_demo = demo != None and hasattr(demo, 'num_reset_attempts') and demo.num_reset_attempts != None
-            # desc = self._scene.init_episode(
-            #     2 % self.variation_count(), max_attempts=10)
-                # max_attempts=_MAX_RESET_ATTEMPTS if not place_demo else demo.num_reset_attempts,
-                # randomly_place=not self._static_positions, place_demo=place_demo)
+            # desc = self._scene.init_episode(2 % self.variation_count(),
+            #     max_attempts=_MAX_RESET_ATTEMPTS if not place_demo else demo.num_reset_attempts,
+            #     randomly_place=not self._static_positions, place_demo=place_demo)
         except (BoundaryError, WaypointError) as e:
             raise TaskEnvironmentError(
                 'Could not place the task %s in the scene. This should not '
@@ -113,7 +112,7 @@ class TaskEnvironment(object):
                 raise RuntimeError(
                     'User requested shaped rewards, but task %s does not have '
                     'a defined reward() function.' % self._task.get_name())
-        return self._scene.get_observation(), reward, terminate
+        return self._scene.get_observation(), success, terminate
 
     # def step(self, action) -> None:
     #     # returns observation, reward, done, info

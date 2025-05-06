@@ -2,7 +2,7 @@
 
 # Set variables
 task_name="open_door"
-episode_length=180
+episode_length=100
 policy_class="ACT"  # ["ACT", "Diffusion"]
 visual_encoder="pointnet"  # ["dinov2", "resnet18", "pointnet"]
 variant="vits14"  # ["vits14", "vitb14", "vitl14", "vitg14"]
@@ -33,7 +33,7 @@ python SEIL_infer.py \
     --predict_value ${predict_value} \
     --obs_type ${obs_type} \
     --episode_len ${episode_length}  \
-    --chunk_size 50 \
+    --chunk_size 100 \
     --temporal_agg \
     --use_segmentation \
     --seg_checkpoint ${seg_checkpoint} \

@@ -26,6 +26,7 @@ class PolicyInferenceAPI:
         self.config = config
         self.all_actions = None  # Initialize all_actions
         self.pred_contact = None  # Initialize pred_contact
+        self.inference_times = []
         self._set_up()
 
     def _set_up(self):
@@ -34,7 +35,7 @@ class PolicyInferenceAPI:
         self._load_policy()
         self._initialize_environment()
         self.temporal_agg = self.config.get("temporal_agg", False)
-        self.query_frequency = 50
+        self.query_frequency = 100
         if self.temporal_agg and self.config["policy_class"] == "ACT":
             self.num_queries = self.config["policy_config"]["num_queries"]
             # num_queries default 100 for ACT
@@ -100,9 +101,11 @@ class PolicyInferenceAPI:
         """Queries the policy to get the next action."""
         if self.config["policy_class"] == "ACT":
             if t % self.query_frequency == 0:
+                start = time.time()  # Start timing
                 self.all_actions, self.pred_contact = self.policy(qpos, curr_image)
+                elapsed = time.time() - start  # Stop timing
+                self.inference_times.append(elapsed)  # Store this duration
             if self.temporal_agg:
-                print(f"@@@@@temporal_agg is {self.temporal_agg}")
                 if self.all_actions is None:
                     raise ValueError(
                         "all_actions is None when temporal_agg is enabled."
@@ -229,19 +232,34 @@ class PolicyInferenceAPI:
         # qpos_history = torch.zeros((1, max_timesteps, self.config["policy_config"]["state_dim"])).cuda()
         with torch.no_grad():
             print(f"temporal_agg is {self.temporal_agg}")
+            
             for t in range(max_timesteps):
                 time.sleep(0.01)
                 qpos, rgb_images, door_pose, pcd_from_mesh = self._get_data(t)
                 # self.test_by_collect(t)
                 # Run the collected data through the policy
-                self._run(
+                success, done = self._run(
                     qpos,
                     rgb_images,
                     t,
                     all_time_actions if temporal_agg else None,
                     door_pose, pcd_from_mesh
-
                 )
+                if done:
+                    if success:
+                        print(f"✅ Task succeeded at timestep {t}")
+                        episode_success = True
+                    else:
+                        print(f"⚠️ Task failed at timestep {t}")
+                    break
+            else:
+                print("⏱️ Episode ended due to timeout.")
+
+        total_inference_time = sum(self.inference_times)
+        fps = len(self.inference_times) / total_inference_time
+        print(f"Policy was queried {len(self.inference_times)} times")
+        print(f"Inference took {total_inference_time:.2f} seconds")
+        print(f"Inference speed: {fps:.2f} FPS")
 
         print(f"Inference took {time.time() - start_time:.2f} seconds")
 

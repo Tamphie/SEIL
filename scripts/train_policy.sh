@@ -9,7 +9,7 @@ predict_value="ee_pos_ori" # ["joint_states", "ee_pos_ori"]
 obs_type="pcd" # ["rgbd", "pcd"] 
 # Conditional chunk_size setting
 if [ "$policy_class" == "ACT" ]; then
-    chunk_size=50
+    chunk_size=100
 elif [ "$policy_class" == "Diffusion" ]; then
     chunk_size=16
 else
