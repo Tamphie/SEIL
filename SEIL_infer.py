@@ -150,7 +150,7 @@ class SEILinference(PolicyInferenceAPI):
         task_name = task_file_to_task_class(self.config["task_name"])
         self.task_env = self.env.get_task(task_name)
         descriptions = self.task_env.scene.init_episode(
-            4 % self.task_env.task.variation_count(),
+            0 % self.task_env.task.variation_count(),
             max_attempts=10)
 
     def _get_data(self, t):

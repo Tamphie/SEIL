@@ -118,7 +118,7 @@ def visualize_pcd_as_vedio(pcd_path):
 
 if __name__ == "__main__":
     # Set paths to the pcd_from_mesh files and task_data.npy
-    pcd_path = "data/open_door/episode_0/pcd_from_mesh"  # Update with the correct path
+    pcd_path = "data/open_door/episode_1/front_pcd"  # Update with the correct path
     task_data_path = "data/open_door/episode_0/task_data.npy"  # Update with the correct path
 
     # Call the visualization function
