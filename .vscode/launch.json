@@ -1,0 +1,85 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Train SEIL",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/SEIL_train.py",
+            "python": "${workspaceFolder}/venv/bin/python",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--policy_class", "ACT",
+                "--task_name", "open_door",
+                "--batch_size", "32",
+                "--chunk_size", "10",
+                "--num_epochs", "300",
+                "--ckpt_dir", "check_point/open_door_ACT_resnet18_vits14",
+                "--seed", "0",
+                "--predict_value", "ee_pos_ori",
+                "--obs_type", "pcd",
+                "--visual_encoder", "pointnet",
+                "--variant", "vits14",
+                "--train_segmentation",
+                "--pointnet_dir", "pointnet2",
+                "--seg_lr", "0.001",
+                "--seg_num_point", "10000",
+                "--seg_num_classes", "2",
+                "--seg_optimizer", "adam"
+            ],
+            "env": {
+                "MASTER_ADDR": "localhost",
+                "MASTER_PORT": "12345",
+                "PYTHONPATH": "/home/tongmiao/RobotIL/RobotIL"  // Add robotil to Python path
+            }
+    },
+    
+            {
+                "name": "Infer",
+                "type": "debugpy",
+                "request": "launch",
+                "program": "${workspaceFolder}/SEIL_infer.py",
+                "python": "${workspaceFolder}/venv/bin/python",
+                "console": "integratedTerminal",
+                "justMyCode": false,
+                "args": [
+                    "--ckpt_dir", "check_point/open_door_ACT_pointnet_vits14",
+                    "--ckpt_name", "policy_best.ckpt",
+                    "--task_name", "open_door",
+                    "--policy_class", "ACT",
+                    "--visual_encoder", "pointnet",
+                    "--variant", "vits14",
+                    "--seed", "0",
+                    "--state_dim", "10",
+                    "--predict_value", "ee_pos_ori",
+                    "--obs_type", "pcd",
+                    "--episode_len", "180",
+                    "--chunk_size", "100",
+                    // "--temporal_agg",
+                    "--use_segmentation",
+                    "--seg_checkpoint", "check_point/seg_model/seg_model_best.ckpt",
+                    "--pointnet_dir", "pointnet2",
+                    "--seg_threshold", "0.7"
+                ],
+                "env": {
+                    "MASTER_ADDR": "localhost",
+                    "MASTER_PORT": "12345",
+                    "PYTHONPATH": "/home/tongmiao/RobotIL/RobotIL"
+                }
+            },
+
+    
+
+    {
+            "name": "validate training",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/utils/validate_training_data_in_obc.py",
+            "python": "${workspaceFolder}/venv/bin/python",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}

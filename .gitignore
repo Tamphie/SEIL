@@ -39,7 +39,6 @@ share/python-wheels/
 MANIFEST
 
 # Ignore environment files
-.vscode/
 bin/
 etc/
 lib/
