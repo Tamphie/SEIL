@@ -2,3 +2,7 @@
 	path = RobotIL
 	url = https://github.com/RobotIL-rls/RobotIL.git
 	branch = object-centric
+[submodule "DP3Baseline"]
+	path = DP3Baseline
+	url = https://github.com/Tamphie/DP3Baseline.git
+	branch = main
