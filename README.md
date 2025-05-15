@@ -6,6 +6,8 @@ Set up
 # virtualenv SEIL
 # source ENV/bin/activate
 # conda activate env
+git clone --recurse-submodules https://github.com/Tamphie/SEIL.git
+
 cd SEIL
  . venv/bin/activate
 pip install --upgrade pip setuptools

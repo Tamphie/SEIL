@@ -1,4 +1,4 @@
-[submodule "RobotIL-object-centric"]
-	path = RobotIL-object-centric
+[submodule "RobotIL"]
+	path = RobotIL
 	url = https://github.com/RobotIL-rls/RobotIL.git
 	branch = object-centric
